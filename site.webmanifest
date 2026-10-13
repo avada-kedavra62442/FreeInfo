@@ -1,0 +1,12 @@
+{
+  "name": "FreeInfo — Website Toolkit",
+  "short_name": "FreeInfo",
+  "description": "Free website analysis for SEO, performance, accessibility and security.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07100e",
+  "theme_color": "#07100e",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
