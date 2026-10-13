@@ -45,6 +45,7 @@ function Finding({ item }) {
 
 function Analyzer() {
   const [url, setUrl] = useState('');
+  const [htmlFile, setHtmlFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [report, setReport] = useState(null);
@@ -72,12 +73,14 @@ function Analyzer() {
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Only public HTTP and HTTPS websites can be checked.');
       if (!parsed.hostname.includes('.') || parsed.hostname === 'localhost') throw new Error('Enter a full public domain, such as example.com.');
       setUrl(parsed.href);
+      const htmlSnapshot = htmlFile ? await htmlFile.text() : null;
+      if (htmlSnapshot && htmlSnapshot.length > 3 * 1024 * 1024) throw new Error('For login-protected pages, the saved HTML file must be 3 MB or smaller. Try saving only the current page as HTML.');
       setBusy(true);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 55000);
       let response;
       try {
-        response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: parsed.href }), signal: controller.signal });
+        response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: parsed.href, ...(htmlSnapshot ? { htmlSnapshot } : {}) }), signal: controller.signal });
       } finally { clearTimeout(timeout); }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'The website could not be checked. Try again with its homepage URL.');
@@ -131,6 +134,11 @@ function Analyzer() {
             <input aria-label="Website URL" value={url} onChange={e => setUrl(e.target.value)} placeholder="Enter a website URL — example.com" disabled={busy}/>
             <button type="submit" disabled={busy}>{busy ? <><span className="spinner"/> Checking…</> : <>Analyze website <Icon name="arrow" size={18}/></>}</button>
           </form>
+          <div className="snapshot-upload">
+            <label htmlFor="snapshot-file">Assess a page that requires login <span>While signed in, save the page as an HTML file and attach it here. FreeInfo assesses the saved markup without receiving your password or session cookies.</span></label>
+            <input id="snapshot-file" type="file" accept=".html,.htm,text/html" disabled={busy} onChange={e => setHtmlFile(e.target.files?.[0] || null)} />
+            {htmlFile && <p className="snapshot-selected">Selected: {htmlFile.name}</p>}
+          </div>
           {error && <div className="error-message" role="alert"><Icon name="alert" size={17}/>{error}</div>}
           <div className="trust-row"><span><Icon name="lock" size={14}/> No account needed</span><i/><span><Icon name="check" size={14}/> No paid API</span><i/><span><Icon name="clock" size={14}/> Usually under a minute</span></div>
           {busy && <div className="scan-progress"><div/><p>Checking page content, response headers and key resources. Larger sites may take a little longer.</p></div>}
