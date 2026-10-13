@@ -1,183 +1,54 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
+import Analyzer from './Analyzer.jsx';
 
-const Icon = ({ name, size = 18 }) => {
-  const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
-  const paths = {
-    scan: <><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6M11 8v6"/></>,
-    globe: <><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></>,
-    shield: <><path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/></>,
-    gauge: <><path d="M20 13a8 8 0 1 0-16 0"/><path d="m12 13 4-5"/><circle cx="12" cy="13" r="1"/></>,
-    accessibility: <><circle cx="12" cy="4" r="1.5"/><path d="M4 7h16M12 7v5m0 0-4 8m4-8 4 8"/></>,
-    search: <><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4 4"/></>,
-    arrow: <><path d="M5 12h14M13 6l6 6-6 6"/></>,
-    check: <path d="m5 12 4 4L19 6"/>,
-    alert: <><path d="M12 3 2.8 19h18.4L12 3Z"/><path d="M12 9v4m0 3h.01"/></>,
-    copy: <><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></>,
-    download: <><path d="M12 3v12m-5-5 5 5 5-5"/><path d="M5 17v4h14v-4"/></>,
-    lock: <><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></>,
-    clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
-    external: <><path d="M14 3h7v7M10 14 21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></>,
-    logo: <><path d="M4 5h16v14H4z"/><path d="M8 15V9l4 4 4-4v6"/></>
-  };
-  return <svg {...common}>{paths[name] || paths.globe}</svg>;
-};
-
-const grade = (score) => score >= 85 ? 'strong' : score >= 60 ? 'medium' : 'weak';
-const scoreLabel = (score) => score >= 85 ? 'Looking good' : score >= 60 ? 'Room to improve' : 'Needs attention';
-const niceUrl = (value) => { try { return new URL(value).hostname.replace(/^www\./, ''); } catch { return value; } };
-
-function ScoreCard({ title, icon, score, detail }) {
-  return <div className="score-card">
-    <div className="score-card-top"><span className="score-icon"><Icon name={icon}/></span><span className="score-number">{score}<small>/100</small></span></div>
-    <div className="score-track"><span className={grade(score)} style={{ width: score + '%' }}/></div>
-    <strong>{title}</strong><span className="muted small">{detail}</span>
-  </div>;
+const Arrow = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>;
+const Mark = () => <span className="brand-mark"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 15V9l5 4 5-4v6"/></svg></span>;
+const features = [
+  { n:'01', icon:'⌕', label:'DISCOVERABILITY', title:'SEO essentials', text:'Review titles, descriptions, headings, canonical URLs, sitemap signals, robots directives and social-sharing metadata.' },
+  { n:'02', icon:'↗', label:'SPEED SIGNALS', title:'Performance clues', text:'Inspect HTML weight, image markup and resource references to uncover practical places to investigate.' },
+  { n:'03', icon:'◉', label:'INCLUSIVE UX', title:'Accessibility basics', text:'Flag missing image alternatives, form controls without clear labels and heading hierarchy issues.' },
+  { n:'04', icon:'◇', label:'SAFER DEFAULTS', title:'Security headers', text:'Review important browser security headers and get plain-language suggestions for missing protections.' }
+];
+function HomePage() {
+ return <div className="app-shell home-page">
+  <header className="topbar">
+   <a className="brand" href="/" aria-label="FreeInfo homepage"><Mark/><span>Free<span className="brand-accent">Info</span><small>WEBSITE ASSESSER</small></span></a>
+   <nav className="topnav"><a href="#capabilities">Capabilities</a><a href="#how-it-works">How it works</a><a href="#faq">FAQ</a><span className="nav-pill"><span/>Free forever</span></nav>
+   <a className="github-link" href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer">GitHub <Arrow/></a>
+  </header>
+  <main>
+   <section className="home-hero">
+    <div className="home-hero-copy">
+     <div className="eyebrow"><span className="eyebrow-line"/> A CLEARER VIEW OF YOUR WEBSITE <span className="eyebrow-dot">✦</span></div>
+     <h1>Your website,<br/><span>understood.</span></h1>
+     <p className="hero-copy">A practical website assessor that turns technical signals into clear next steps. Check SEO, performance clues, accessibility basics and security headers — without paywalls or confusing jargon.</p>
+     <div className="home-actions"><a className="home-primary" href="/assess">Assess a website <Arrow/></a><a className="home-secondary" href="#capabilities">Explore capabilities <span>↓</span></a></div>
+     <div className="trust-row"><span>✓ Free to use</span><i/><span>✓ No account required</span><i/><span>✓ No paid API</span></div>
+    </div>
+    <div className="home-visual" aria-hidden="true"><div className="home-orbit orbit-a"/><div className="home-orbit orbit-b"/>
+     <div className="home-dashboard"><div className="dashboard-top"><span className="dashboard-mark"><Mark/></span><span>WEBSITE ASSESSMENT</span><span className="live-dot"/></div><div className="dashboard-domain"><span className="secure-dot"/> example.com <span className="scan-chip">READY TO CHECK</span></div>
+      <div className="dashboard-score"><div className="dashboard-ring"><strong>92</strong><small>HEALTH</small></div><div className="dashboard-bars"><span/><span/><span/><small>Illustrative preview — not a real scan</small></div></div>
+      <div className="dashboard-row"><span>✓</span><div><b>SEO essentials</b><small>Metadata and headings</small></div><em>REVIEW</em></div>
+      <div className="dashboard-row"><span>✓</span><div><b>Security headers</b><small>Browser-side protections</small></div><em>REVIEW</em></div>
+      <div className="dashboard-row"><span>↗</span><div><b>Actionable findings</b><small>Plain-language suggestions</small></div><em>READY</em></div>
+     </div><div className="home-float home-float-left">✦ <span>Clarity over jargon</span></div><div className="home-float home-float-right">◇ <span>Built for the open web</span></div>
+    </div>
+    <div className="home-hero-foot"><span>USEFUL SOFTWARE. WITHOUT THE NONSENSE.</span><span>EMERALD / SILVER EDITION</span></div>
+   </section>
+   <section className="home-intro"><div className="section-kicker">WHY FREEINFO EXISTS</div><h2>Good decisions start with<br/><span>knowing what to improve.</span></h2><p>Website reports can be full of numbers and technical language. FreeInfo focuses on the signals that help you understand a page and decide what to do next. It is a starting point for assessment, not a magic button that claims to test everything.</p></section>
+   <section id="capabilities" className="features-section home-features"><div className="section-intro"><div className="section-kicker">ONE ASSESSMENT. FOUR PERSPECTIVES.</div><h2>Useful checks.<br/><span>Understandable results.</span></h2><p>Start with the essentials, see what was detected, then use the recommended fixes as a practical checklist.</p></div>
+    <div className="feature-grid">{features.map(f=><article className="feature-card" key={f.n}><div className="feature-icon home-feature-symbol">{f.icon}</div><span className="feature-index">{f.n} / {f.label}</span><h3>{f.title}</h3><p>{f.text}</p><div className="feature-foot"><span/>Clear findings, not a wall of jargon.</div></article>)}</div>
+   </section>
+   <section className="home-detail-grid"><div className="home-detail-copy"><div className="section-kicker">MADE TO BE USEFUL</div><h2>From a URL to a<br/><span>prioritized to-do list.</span></h2><p>FreeInfo collects accessible page markup and response-header signals, groups the results into familiar categories, and explains why a finding may matter. Export the report to share it or keep a record of what you checked.</p><a className="text-link" href="/assess">Open the assessor <Arrow/></a></div><div className="home-checklist"><div className="checklist-head"><span>ASSESSMENT CHECKLIST</span><span className="nav-pill"><span/> 4 categories</span></div>{[['SEO','Titles, descriptions, headings and canonical hints'],['Performance','HTML size, images and resource references'],['Accessibility','Image alternatives, labels and heading order'],['Security','Common HTTP response security headers']].map(([t,d],i)=><div className="checklist-item" key={t}><span className="checklist-number">0{i+1}</span><div><b>{t}</b><p>{d}</p></div><Arrow/></div>)}<p className="checklist-note">Automated checks are best-effort signals. They do not replace a full professional or manual audit.</p></div></section>
+   <section id="how-it-works" className="how-section home-how"><div className="section-kicker">SIMPLE BY DESIGN</div><h2>Three steps. No unnecessary friction.</h2><div className="steps"><div><span>01</span><h3>Enter a website</h3><p>Start with the URL of the page you want to assess.</p></div><div><span>02</span><h3>Review the signals</h3><p>FreeInfo checks the HTML response and selected security headers that it can access.</p></div><div><span>03</span><h3>Choose your next steps</h3><p>Read the recommendations, inspect category details and download your report.</p></div></div></section>
+   <section className="home-boundaries"><div><div className="section-kicker">HONEST BY DESIGN</div><h2>Clear about what we can —<br/><span>and cannot — see.</span></h2></div><div className="boundaries-copy"><p>FreeInfo does not break into websites, bypass access controls, or try to retrieve private information. A normal URL scan can only inspect what the service can legitimately access. Login-protected pages may require an owner-provided export or a future browser-based assessment workflow.</p><p>JavaScript-rendered interfaces, real-world Core Web Vitals, authenticated user flows and complete security testing may need browser tools or a dedicated audit. We avoid pretending a quick scan proves a site is perfectly safe.</p></div></section>
+   <section id="faq" className="home-faq"><div className="section-kicker">GOOD QUESTIONS</div><h2>Frequently asked questions.</h2><div className="faq-grid"><article><h3>Is FreeInfo really free?</h3><p>Yes. The goal is to keep useful website checks accessible without a subscription, paid API key or account requirement.</p></article><article><h3>Does it change my website?</h3><p>No. The assessor reads accessible responses and reports observations. It does not edit or publish anything to the site being checked.</p></article><article><h3>Can it assess a page behind a login?</h3><p>A server-side URL scan cannot use your existing browser login session. Do not submit passwords or session cookies. Authenticated assessment needs a safe browser-side workflow or an HTML export supplied by an authorized site owner.</p></article><article><h3>Does a high score guarantee security?</h3><p>No. Results are automated indicators and can miss issues. Use them as a starting checklist, not as a certification or penetration test.</p></article></div></section>
+   <section className="closing-cta home-closing"><div><div className="section-kicker">READY WHEN YOU ARE</div><h2>Know what to improve.<br/><span>Start with FreeInfo.</span></h2><p>Free website assessment. Clear recommendations. No nonsense.</p></div><a className="home-primary" href="/assess">Start an assessment <Arrow/></a></section>
+  </main>
+  <footer className="footer"><div className="footer-top"><a className="brand footer-brand" href="/"><Mark/><span>Free<span className="brand-accent">Info</span><small>WEBSITE ASSESSER</small></span></a><p>Useful software. Without the nonsense.</p><a className="footer-github" href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer">GitHub <Arrow/></a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} FreeInfo. Built for the open web.</span><span>✓ Free · No account · No paid API</span><a href="/assess">Open assessor <Arrow/></a></div></footer>
+ </div>;
 }
-
-function Finding({ item }) {
-  const level = item.level || 'info';
-  return <div className="finding">
-    <span className={'finding-icon ' + level}><Icon name={level === 'good' ? 'check' : level === 'warning' ? 'alert' : 'scan'} size={17}/></span>
-    <div className="finding-copy"><strong>{item.title}</strong><p>{item.detail}</p>{item.fix && <div className="finding-fix"><span>RECOMMENDED FIX</span>{item.fix}</div>}</div>
-    <span className={'severity ' + level}>{level === 'good' ? 'PASS' : level === 'warning' ? 'CHECK' : 'INFO'}</span>
-  </div>;
-}
-
 export default function App() {
-  const [url, setUrl] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [report, setReport] = useState(null);
-  const [tab, setTab] = useState('overview');
-  const [copied, setCopied] = useState(false);
-
-  const allFindings = useMemo(() => report ? [
-    ...(report.findings?.seo || []),
-    ...(report.findings?.performance || []),
-    ...(report.findings?.accessibility || []),
-    ...(report.findings?.security || [])
-  ] : [], [report]);
-  const fixes = allFindings.filter(x => x.level === 'warning');
-
-  async function analyze(event) {
-    event?.preventDefault();
-    setError('');
-    setReport(null);
-    setCopied(false);
-    let clean = url.trim();
-    if (!clean) { setError('Enter a website URL to get started.'); return; }
-    if (!/^https?:\/\//i.test(clean)) clean = 'https://' + clean;
-    try {
-      const parsed = new URL(clean);
-      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Only public HTTP and HTTPS websites can be checked.');
-      if (!parsed.hostname.includes('.') || parsed.hostname === 'localhost') throw new Error('Enter a full public domain, such as example.com.');
-      setUrl(parsed.href);
-      setBusy(true);
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 55000);
-      let response;
-      try {
-        response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: parsed.href }), signal: controller.signal });
-      } finally { clearTimeout(timeout); }
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'The website could not be checked. Try again with its homepage URL.');
-      setReport(data);
-      setTab('overview');
-      document.getElementById('report')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch (e) {
-      setError(e.name === 'AbortError' ? 'This website took too long to respond. Try a smaller or faster public page.' : (e.message || 'Something went wrong. Please try again.'));
-    } finally { setBusy(false); }
-  }
-
-  async function copyReport() {
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch { setError('Clipboard access was blocked by your browser. Use Download report instead.'); }
-  }
-  function downloadReport() {
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = (niceUrl(report.url) || 'website') + '-freeinfo-report.json';
-    link.click();
-    URL.revokeObjectURL(link.href);
-  }
-
-  const sections = report ? [
-    { id: 'seo', title: 'SEO', icon: 'search', count: report.findings.seo.length },
-    { id: 'performance', title: 'Performance', icon: 'gauge', count: report.findings.performance.length },
-    { id: 'accessibility', title: 'Accessibility', icon: 'accessibility', count: report.findings.accessibility.length },
-    { id: 'security', title: 'Security', icon: 'shield', count: report.findings.security.length }
-  ] : [];
-
-  return <div className="app-shell">
-    <header className="topbar">
-      <a className="brand" href="#" aria-label="FreeInfo home"><span className="brand-mark"><Icon name="logo" size={23}/></span><span>Free<span className="brand-accent">Info</span><small>WEBSITE TOOLKIT</small></span></a>
-      <nav className="topnav"><a href="#features">What we check</a><a href="#how-it-works">How it works</a><span className="nav-pill"><span/>Free forever</span></nav>
-      <a className="github-link" href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer"><Icon name="external" size={16}/> GitHub</a>
-    </header>
-
-    <main>
-      <section className="hero">
-        <div className="hero-glow glow-one"/><div className="hero-glow glow-two"/>
-        <div className="hero-content">
-          <div className="eyebrow"><span className="eyebrow-line"/> THE WEBSITE HEALTH CHECK <span className="eyebrow-dot">✦</span></div>
-          <h1>Know your website.<br/><span>Make it better.</span></h1>
-          <p className="hero-copy">A clear, practical audit of your website's SEO, performance, accessibility and security — without the jargon or the price tag.</p>
-          <form className="url-form" onSubmit={analyze}>
-            <span className="url-icon"><Icon name="globe" size={20}/></span>
-            <input aria-label="Website URL" value={url} onChange={e => setUrl(e.target.value)} placeholder="Enter a website URL — example.com" disabled={busy}/>
-            <button type="submit" disabled={busy}>{busy ? <><span className="spinner"/> Checking…</> : <>Analyze website <Icon name="arrow" size={18}/></>}</button>
-          </form>
-          {error && <div className="error-message" role="alert"><Icon name="alert" size={17}/>{error}</div>}
-          <div className="trust-row"><span><Icon name="lock" size={14}/> No account needed</span><i/><span><Icon name="check" size={14}/> No paid API</span><i/><span><Icon name="clock" size={14}/> Usually under a minute</span></div>
-          {busy && <div className="scan-progress"><div/><p>Checking page content, response headers and key resources. Larger sites may take a little longer.</p></div>}
-        </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="orbit orbit-a"/><div className="orbit orbit-b"/>
-          <div className="scanner-card"><div className="scanner-head"><span className="mini-brand"><Icon name="logo" size={15}/></span><span>WEBSITE SCAN</span><span className="live-dot"/></div>
-            <div className="scanner-url"><span className="secure-dot"/> example.com <span className="scan-chip">READY</span></div>
-            <div className="mock-score"><div className="mock-ring"><div><strong>92</strong><small>HEALTH</small></div></div><div className="mock-lines"><span/><span/><span/></div></div>
-            <div className="mock-checks"><div><span className="mock-check"><Icon name="check" size={12}/></span> SEO signals <b>GOOD</b></div><div><span className="mock-check"><Icon name="check" size={12}/></span> Secure headers <b>GOOD</b></div><div><span className="mock-warn"><Icon name="alert" size={12}/></span> Image weight <b className="warm">REVIEW</b></div></div>
-          </div>
-          <div className="float-tag tag-left"><span className="tag-icon"><Icon name="shield" size={16}/></span><span><b>Security scan</b><small>Headers checked</small></span></div>
-          <div className="float-tag tag-right"><span className="tag-icon"><Icon name="gauge" size={16}/></span><span><b>Performance</b><small>Resource insights</small></span></div>
-          <div className="art-spark spark-a">✦</div><div className="art-spark spark-b">✧</div>
-        </div>
-        <div className="hero-bottom"><span>BUILT FOR THE OPEN WEB</span><div/><span>USEFUL SOFTWARE. WITHOUT THE NONSENSE.</span></div>
-      </section>
-
-      {report && <section id="report" className="report-section">
-        <div className="report-heading"><div><div className="section-kicker">YOUR RESULTS</div><h2>Website report<span className="title-period">.</span></h2><p>Analysis for <a href={report.url} target="_blank" rel="noreferrer">{niceUrl(report.url)} <Icon name="external" size={13}/></a> · {new Date(report.analyzedAt).toLocaleString()}</p></div><div className="report-actions"><button className="ghost-button" onClick={copyReport}><Icon name="copy" size={16}/>{copied ? 'Copied!' : 'Copy JSON'}</button><button className="solid-small" onClick={downloadReport}><Icon name="download" size={16}/> Download report</button></div></div>
-        <div className="overall-card"><div className="overall-score"><div className={'big-ring ' + grade(report.scores.overall)} style={{'--score': report.scores.overall}}><div><strong>{report.scores.overall}</strong><small>OUT OF 100</small></div></div></div><div className="overall-copy"><div className="score-overline"><span className="status-dot"/> YOUR WEBSITE HEALTH</div><h3>{scoreLabel(report.scores.overall)}</h3><p>{fixes.length ? `We found ${fixes.length} item${fixes.length === 1 ? '' : 's'} worth fixing. Start with the highest-impact recommendations below.` : 'No major issues were detected by these automated checks. A manual review can still uncover more.'}</p><div className="overall-stats"><span><b>{allFindings.filter(x=>x.level==='good').length}</b> checks passed</span><span><b>{fixes.length}</b> recommendations</span><span><b>{report.performance?.requests ?? '—'}</b> page resources</span></div></div></div>
-        <div className="score-grid">{sections.map(s => <ScoreCard key={s.id} title={s.title} icon={s.icon} score={report.scores[s.id]} detail={s.count + (s.count === 1 ? ' finding' : ' findings')}/>)}</div>
-        <div className="report-tabs">{[{id:'overview',label:'Overview'},{id:'seo',label:'SEO'},{id:'performance',label:'Performance'},{id:'accessibility',label:'Accessibility'},{id:'security',label:'Security'}].map(t => <button key={t.id} className={tab===t.id?'active':''} onClick={()=>setTab(t.id)}>{t.label}{t.id!=='overview' && <span>{report.findings[t.id].length}</span>}</button>)}</div>
-        {tab==='overview' ? <div className="overview-grid"><div className="panel-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="alert" size={17}/></span><div><h3>Things you should fix</h3><p>Prioritized suggestions from your scan</p></div></div>{fixes.length ? fixes.slice(0,8).map((f,i)=><Finding key={i} item={f}/>) : <div className="empty-state"><Icon name="check" size={22}/><strong>Nothing urgent found</strong><p>Great start. Review the category tabs for more details.</p></div>}</div><div className="panel-card details-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="globe" size={17}/></span><div><h3>Page snapshot</h3><p>What FreeInfo could read</p></div></div><dl><dt>Page title</dt><dd>{report.seo.title || 'Not found'}</dd><dt>Meta description</dt><dd>{report.seo.description || 'Not found'}</dd><dt>HTTP status</dt><dd><span className="status-value">{report.page.status} {report.page.statusText}</span></dd><dt>Page size</dt><dd>{report.performance.pageSizeLabel}</dd><dt>Canonical URL</dt><dd className="break-word">{report.seo.canonical || 'Not specified'}</dd><dt>Sitemap</dt><dd>{report.seo.sitemap ? 'Detected' : 'Not detected'}</dd></dl><div className="note-box"><Icon name="lock" size={15}/><p>Only public page content and response headers were checked. No login, private data or website changes.</p></div></div></div> :
-          <div className="panel-card category-panel"><div className="panel-title"><span className="panel-title-icon"><Icon name={sections.find(s=>s.id===tab)?.icon || 'scan'} size={17}/></span><div><h3>{sections.find(s=>s.id===tab)?.title} checks</h3><p>Signals collected from the public page</p></div></div>{(report.findings[tab]||[]).map((f,i)=><Finding key={i} item={f}/>)}
-          {tab==='seo' && <div className="data-grid"><div><span>H1 headings</span><b>{report.seo.h1Count}</b></div><div><span>H2 headings</span><b>{report.seo.h2Count}</b></div><div><span>Open Graph</span><b>{report.seo.openGraph ? 'Detected' : 'Missing'}</b></div><div><span>Robots directive</span><b>{report.seo.robots || 'Default'}</b></div></div>}
-          {tab==='performance' && <div className="data-grid"><div><span>HTML transfer size</span><b>{report.performance.pageSizeLabel}</b></div><div><span>Detected resources</span><b>{report.performance.requests}</b></div><div><span>Images</span><b>{report.performance.imageCount}</b></div><div><span>Images without dimensions</span><b>{report.performance.imagesWithoutDimensions}</b></div></div>}
-          {tab==='accessibility' && <div className="note-box"><Icon name="alert" size={15}/><p>Automated checks cannot replace assistive-technology testing. Colour contrast and keyboard behaviour should be reviewed in a real browser.</p></div>}
-          {tab==='security' && <div className="data-grid">{report.security.headers.map(h=><div key={h.name}><span>{h.name}</span><b className={h.present?'good-text':'warn-text'}>{h.present?'Present':'Missing'}</b></div>)}</div>}
-          </div>}
-        <p className="report-disclaimer">Automated results are best-effort signals, not a certification or a substitute for a full audit. Third-party resources, JavaScript-rendered content and browser-only behaviour may not be fully visible.</p>
-      </section>}
-
-      {!report && <section id="features" className="features-section">
-        <div className="section-intro"><div className="section-kicker">ONE SCAN. FOUR PERSPECTIVES.</div><h2>More clarity.<br/><span>Less guesswork.</span></h2><p>Useful checks that turn technical website signals into a to-do list you can actually use.</p></div>
-        <div className="feature-grid">
-          <article className="feature-card"><div className="feature-icon"><Icon name="search" size={21}/></div><span className="feature-index">01 / DISCOVERABILITY</span><h3>SEO essentials</h3><p>See the title, description, heading structure, canonical URL, robots hints, sitemap and social preview metadata.</p><div className="feature-foot"><span/>Help people and search engines understand your page.</div></article>
-          <article className="feature-card"><div className="feature-icon"><Icon name="gauge" size={21}/></div><span className="feature-index">02 / SPEED SIGNALS</span><h3>Performance</h3><p>Inspect HTML size, response timing, detected resources, images and potential asset-weight hotspots.</p><div className="feature-foot"><span/>Find obvious opportunities to trim the load.</div></article>
-          <article className="feature-card"><div className="feature-icon"><Icon name="accessibility" size={21}/></div><span className="feature-index">03 / INCLUSIVE UX</span><h3>Accessibility</h3><p>Catch missing image alternatives, unlabeled forms, skipped heading levels and other common markup issues.</p><div className="feature-foot"><span/>Make your content easier for more people.</div></article>
-          <article className="feature-card"><div className="feature-icon"><Icon name="shield" size={21}/></div><span className="feature-index">04 / SAFER DEFAULTS</span><h3>Security headers</h3><p>Check important response headers including CSP, HSTS, frame protection, content-type protection and referrer policy.</p><div className="feature-foot"><span/>Spot missing layers of browser-side protection.</div></article>
-        </div>
-      </section>}
-
-      <section id="how-it-works" className="how-section"><div className="section-kicker">SIMPLE BY DESIGN</div><h2>From URL to action plan.</h2><div className="steps"><div><span>01</span><h3>Enter a public URL</h3><p>Start with a page you want to understand.</p></div><div><span>02</span><h3>Run the checks</h3><p>FreeInfo inspects page markup and response headers.</p></div><div><span>03</span><h3>Make improvements</h3><p>Use clear findings and exportable results to plan your next steps.</p></div></div></section>
-      <section className="closing-cta"><div><div className="section-kicker">YOUR NEXT IMPROVEMENT STARTS HERE</div><h2>A better website begins<br/>with <span>better information.</span></h2></div><button onClick={()=>{document.querySelector('.url-form input')?.focus();window.scrollTo({top:0,behavior:'smooth'});}}>Analyze a website <Icon name="arrow" size={18}/></button></section>
-    </main>
-
-    <footer className="footer"><div className="footer-top"><a className="brand footer-brand" href="#"><span className="brand-mark"><Icon name="logo" size={23}/></span><span>Free<span className="brand-accent">Info</span><small>WEBSITE TOOLKIT</small></span></a><p>Useful software. Without the nonsense.</p><a className="footer-github" href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer"><Icon name="external" size={15}/> Open-source home</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} FreeInfo. Built for the open web.</span><span><Icon name="lock" size={13}/> No account · No paid API · No nonsense</span><a href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer">Source code <Icon name="arrow" size={13}/></a></div></footer>
-  </div>;
+ const path = window.location.pathname.replace(/\/+$/, '') || '/';
+ return path === '/assess' ? <Analyzer/> : <HomePage/>;
 }
