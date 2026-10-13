@@ -1,13 +1,24 @@
 {
-  "name": "FreeInfo — Website Assessor",
+  "name": "FreeInfo — Website Quality Assessor",
   "short_name": "FreeInfo",
-  "description": "Free website assessment for SEO, performance, accessibility and security signals.",
+  "description": "Assess website SEO, performance signals, accessibility markup and security headers. Prioritize improvements with FreeInfo.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07100e",
-  "theme_color": "#07110e",
+  "theme_color": "#07100e",
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
-    { "src": "/apple-touch-icon.svg", "sizes": "180x180", "type": "image/svg+xml" }
-  ]
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "scope": "/"
 }

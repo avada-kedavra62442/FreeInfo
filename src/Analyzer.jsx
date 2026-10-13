@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import InstallAppButton from './components/InstallAppButton.jsx';
+import AppFooter from './components/AppFooter.jsx';
 
 const Icon = ({ name, size = 18 }) => {
   const common = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -58,7 +60,15 @@ function Analyzer() {
     ...(report.findings?.accessibility || []),
     ...(report.findings?.security || [])
   ] : [], [report]);
-  const fixes = allFindings.filter(x => x.level === 'warning');
+  const priorityRank = (item) => {
+    const title = String(item?.title || '').toLowerCase();
+    if (/content-security-policy|strict-transport-security|form controls may lack labels|images missing alternative text|missing page title|no page title/.test(title)) return 1;
+    if (/large html document|page resource references|x-frame-options|x-content-type-options|missing.*title|title not found/.test(title)) return 2;
+    if (/meta description|heading levels|h1 heading|canonical/.test(title)) return 3;
+    if (/social preview|image dimensions|sitemap/.test(title)) return 4;
+    return item?.level === 'warning' ? 3 : 5;
+  };
+  const fixes = allFindings.filter(x => x.level === 'warning').sort((a, b) => priorityRank(a) - priorityRank(b));
 
   async function analyze(event) {
     event?.preventDefault();
@@ -119,7 +129,7 @@ function Analyzer() {
     <header className="topbar">
       <a className="brand" href="#" aria-label="FreeInfo home"><span className="brand-mark"><Icon name="logo" size={23}/></span><span>Free<span className="brand-accent">Info</span><small>WEBSITE TOOLKIT</small></span></a>
       <nav className="topnav"><a href="#features">What we check</a><a href="#how-it-works">How it works</a><span className="nav-pill"><span/>Free forever</span></nav>
-      <a className="github-link" href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer"><Icon name="external" size={16}/> GitHub</a>
+      <InstallAppButton />
     </header>
 
     <main>
@@ -162,7 +172,7 @@ function Analyzer() {
         <div className="overall-card"><div className="overall-score"><div className={'big-ring ' + grade(report.scores.overall)} style={{'--score': report.scores.overall}}><div><strong>{report.scores.overall}</strong><small>OUT OF 100</small></div></div></div><div className="overall-copy"><div className="score-overline"><span className="status-dot"/> YOUR WEBSITE HEALTH</div><h3>{scoreLabel(report.scores.overall)}</h3><p>{fixes.length ? `We found ${fixes.length} item${fixes.length === 1 ? '' : 's'} worth fixing. Start with the highest-impact recommendations below.` : 'No major issues were detected by these automated checks. A manual review can still uncover more.'}</p><div className="overall-stats"><span><b>{allFindings.filter(x=>x.level==='good').length}</b> checks passed</span><span><b>{fixes.length}</b> recommendations</span><span><b>{report.performance?.requests ?? '—'}</b> page resources</span></div></div></div>
         <div className="score-grid">{sections.map(s => <ScoreCard key={s.id} title={s.title} icon={s.icon} score={report.scores[s.id]} detail={s.count + (s.count === 1 ? ' finding' : ' findings')}/>)}</div>
         <div className="report-tabs">{[{id:'overview',label:'Overview'},{id:'seo',label:'SEO'},{id:'performance',label:'Performance'},{id:'accessibility',label:'Accessibility'},{id:'security',label:'Security'}].map(t => <button key={t.id} className={tab===t.id?'active':''} onClick={()=>setTab(t.id)}>{t.label}{t.id!=='overview' && <span>{report.findings[t.id].length}</span>}</button>)}</div>
-        {tab==='overview' ? <div className="overview-grid"><div className="panel-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="alert" size={17}/></span><div><h3>Things you should fix</h3><p>Prioritized suggestions from your scan</p></div></div>{fixes.length ? fixes.slice(0,8).map((f,i)=><Finding key={i} item={f}/>) : <div className="empty-state"><Icon name="check" size={22}/><strong>Nothing urgent found</strong><p>Great start. Review the category tabs for more details.</p></div>}</div><div className="panel-card details-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="globe" size={17}/></span><div><h3>Page snapshot</h3><p>What FreeInfo could read</p></div></div><dl><dt>Page title</dt><dd>{report.seo.title || 'Not found'}</dd><dt>Meta description</dt><dd>{report.seo.description || 'Not found'}</dd><dt>HTTP status</dt><dd><span className="status-value">{report.page.status} {report.page.statusText}</span></dd><dt>Page size</dt><dd>{report.performance.pageSizeLabel}</dd><dt>Canonical URL</dt><dd className="break-word">{report.seo.canonical || 'Not specified'}</dd><dt>Sitemap</dt><dd>{report.seo.sitemap ? 'Detected' : 'Not detected'}</dd></dl><div className="note-box"><Icon name="lock" size={15}/><p>{report.page.statusText === 'Imported HTML snapshot' ? 'This report uses the HTML file you supplied. Original HTTP headers, scripts loaded later, and private API responses are not included.' : 'Only publicly accessible page content and response headers were checked. No website changes were made.'}</p></div></div></div> :
+        {tab==='overview' ? <div className="overview-grid"><div className="panel-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="alert" size={17}/></span><div><h3>Priority actions</h3><p>Highest-impact detected issues first · review before release</p></div></div>{fixes.length ? fixes.slice(0,8).map((f,i)=><Finding key={i} item={f}/>) : <div className="empty-state"><Icon name="check" size={22}/><strong>Nothing urgent found</strong><p>Great start. Review the category tabs for more details.</p></div>}</div><div className="panel-card details-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="globe" size={17}/></span><div><h3>Page snapshot</h3><p>What FreeInfo could read</p></div></div><dl><dt>Page title</dt><dd>{report.seo.title || 'Not found'}</dd><dt>Meta description</dt><dd>{report.seo.description || 'Not found'}</dd><dt>HTTP status</dt><dd><span className="status-value">{report.page.status} {report.page.statusText}</span></dd><dt>Page size</dt><dd>{report.performance.pageSizeLabel}</dd><dt>Canonical URL</dt><dd className="break-word">{report.seo.canonical || 'Not specified'}</dd><dt>Sitemap</dt><dd>{report.seo.sitemap ? 'Detected' : 'Not detected'}</dd></dl><div className="note-box"><Icon name="lock" size={15}/><p>{report.page.statusText === 'Imported HTML snapshot' ? 'This report uses the HTML file you supplied. Original HTTP headers, scripts loaded later, and private API responses are not included.' : 'Only publicly accessible page content and response headers were checked. No website changes were made.'}</p></div></div></div> :
           <div className="panel-card category-panel"><div className="panel-title"><span className="panel-title-icon"><Icon name={sections.find(s=>s.id===tab)?.icon || 'scan'} size={17}/></span><div><h3>{sections.find(s=>s.id===tab)?.title} checks</h3><p>Signals collected from the public page</p></div></div>{(report.findings[tab]||[]).map((f,i)=><Finding key={i} item={f}/>)}
           {tab==='seo' && <div className="data-grid"><div><span>H1 headings</span><b>{report.seo.h1Count}</b></div><div><span>H2 headings</span><b>{report.seo.h2Count}</b></div><div><span>Open Graph</span><b>{report.seo.openGraph ? 'Detected' : 'Missing'}</b></div><div><span>Robots directive</span><b>{report.seo.robots || 'Default'}</b></div></div>}
           {tab==='performance' && <div className="data-grid"><div><span>HTML transfer size</span><b>{report.performance.pageSizeLabel}</b></div><div><span>Detected resources</span><b>{report.performance.requests}</b></div><div><span>Images</span><b>{report.performance.imageCount}</b></div><div><span>Images without dimensions</span><b>{report.performance.imagesWithoutDimensions}</b></div></div>}
@@ -187,7 +197,7 @@ function Analyzer() {
       }
     </main>
 
-    <footer className="footer"><div className="footer-top"><a className="brand footer-brand" href="#"><span className="brand-mark"><Icon name="logo" size={23}/></span><span>Free<span className="brand-accent">Info</span><small>WEBSITE TOOLKIT</small></span></a><p>Useful software. Without the nonsense.</p><a className="footer-github" href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer"><Icon name="external" size={15}/> Open-source home</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} FreeInfo. Built for the open web.</span><span><Icon name="lock" size={13}/> No account · No paid API · No nonsense</span><a href="https://github.com/avada-kedavra62442/FreeInfo" target="_blank" rel="noreferrer">Source code <Icon name="arrow" size={13}/></a></div></footer>
+    <AppFooter />
   </div>;
 }
 
