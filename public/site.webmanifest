@@ -1,0 +1,13 @@
+{
+  "name": "FreeInfo — Website Assessor",
+  "short_name": "FreeInfo",
+  "description": "Free website assessment for SEO, performance, accessibility and security signals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07100e",
+  "theme_color": "#07110e",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" },
+    { "src": "/apple-touch-icon.svg", "sizes": "180x180", "type": "image/svg+xml" }
+  ]
+}
