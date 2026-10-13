@@ -106,7 +106,7 @@ function decodeEntities(s = '') {
 }
 function stripTags(s = '') { return decodeEntities(s.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()); }
 function attr(tag, name) {
-  const re = new RegExp('(?:^|\\s)' + name + '\\s*=\\s*(?:"([^"]*)"|\\'([^\\']*)\\'|([^\\s>]+))','i');
+  const re = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))`, 'i');
   const m = tag.match(re);
   return decodeEntities(m ? (m[1] ?? m[2] ?? m[3] ?? '').trim() : '');
 }
