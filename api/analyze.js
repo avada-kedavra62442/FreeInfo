@@ -1,7 +1,7 @@
 import dns from 'node:dns/promises';
 import net from 'node:net';
 
-const MAX_HTML_BYTES = 3 * 1024 * 1024;
+const MAX_HTML_BYTES = 25 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 12500;
 const SECURITY_HEADERS = [
   ['Content-Security-Policy', 'Restricts what scripts, styles and other resources a page may load.'],
@@ -84,7 +84,7 @@ async function safeFetch(startUrl, method = 'GET', accept = 'text/html,applicati
 }
 async function readLimited(response) {
   const declared = Number(response.headers.get('content-length') || 0);
-  if (declared > MAX_HTML_BYTES) throw new Error('This page is larger than the 3 MB analysis limit. Try a lighter page.');
+  if (declared > MAX_HTML_BYTES) throw new Error('This page is larger than the 25 MB analysis limit. Try a lighter page.');
   if (!response.body) return Buffer.alloc(0);
   const reader = response.body.getReader();
   const chunks = [];
@@ -239,7 +239,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     const message = error?.message || 'Website analysis failed. Please try again.';
-    const status = /only public|private|local network|resolve|valid website|username|safety|http and https|2,048/i.test(message) ? 400 : /3 MB|too long|redirect/i.test(message) ? 422 : 502;
+    const status = /only public|private|local network|resolve|valid website|username|safety|http and https|2,048/i.test(message) ? 400 : /25 MB|too long|redirect/i.test(message) ? 422 : 502;
     return res.status(status).json({error:message});
   }
 }
