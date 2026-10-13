@@ -183,15 +183,19 @@ export default async function handler(req, res) {
     const start = Date.now();
     const initialUrl = await validatePublicUrl(input.url);
     if (initialUrl.protocol !== 'https:' && initialUrl.protocol !== 'http:') return res.status(400).json({error:'Only public HTTP and HTTPS websites can be checked.'});
-    const response = await safeFetch(initialUrl.href);
+    const snapshotMode = typeof input.htmlSnapshot === 'string';
+    if (snapshotMode && input.htmlSnapshot.length > 3 * 1024 * 1024) return res.status(413).json({error:'Saved HTML snapshots must be 3 MB or smaller.'});
+    const response = snapshotMode
+      ? { ok: true, status: 200, statusText: 'Imported HTML snapshot', url: initialUrl.href, headers: { get: () => null } }
+      : await safeFetch(initialUrl.href);
     if (!response.ok) return res.status(502).json({error:`The website returned HTTP ${response.status} ${response.statusText || ''}. Check the URL or try a public page that loads without a login.`.trim()});
-    const contentType = response.headers.get('content-type') || '';
+    const contentType = snapshotMode ? 'text/html; charset=utf-8' : (response.headers.get('content-type') || '');
     if (!/text\/html|application\/xhtml\+xml/i.test(contentType)) return res.status(415).json({error:'That URL did not return an HTML page. Enter a website page, not an image, PDF or download.'});
-    const body = await readLimited(response);
+    const body = snapshotMode ? Buffer.from(input.htmlSnapshot, 'utf8') : await readLimited(response);
     const html = body.toString('utf8');
     const finalUrl = response.url || initialUrl.href;
     const parsed = collectMeta(html, finalUrl);
-    parsed.seo.sitemap = await sitemapExists(finalUrl);
+    parsed.seo.sitemap = snapshotMode ? false : await sitemapExists(finalUrl);
     const headers = SECURITY_HEADERS.map(([name,description])=>({name,description,present:!!response.headers.get(name.toLowerCase()),value:response.headers.get(name.toLowerCase())||''}));
     const findings = {seo:[],performance:[],accessibility:[],security:[]};
     if (parsed.seo.title) findings.seo.push(finding('good','Page title found',`Title: “${parsed.seo.title.slice(0,140)}”`));
@@ -218,7 +222,7 @@ export default async function handler(req, res) {
     findings.accessibility.push(finding(parsed.accessibility.formIssues>0?'warning':'good',parsed.accessibility.formIssues>0?'Form controls may lack labels':'Form control label check passed',`Found ${parsed.accessibility.formIssues} of ${parsed.accessibility.formControls} controls without a detectable label, aria label or placeholder.`,'Associate every form control with a visible <label> or accessible name. Placeholder text alone is not a substitute for a label.'));
     findings.accessibility.push(finding(parsed.accessibility.headingSkips?'warning':'good',parsed.accessibility.headingSkips?'Heading levels may be skipped':'Heading hierarchy check passed',parsed.accessibility.headingSkips?'A heading level jumps by more than one in source order.':'No skipped heading levels were detected in the static source.',parsed.accessibility.headingSkips?'Keep headings in a logical order (for example H1, H2, H3).':undefined));
     findings.accessibility.push(finding('info','Contrast and keyboard use need a browser check','Colour contrast, focus visibility, keyboard interactions and dynamically rendered content cannot be reliably verified from HTML alone.'));
-    for (const h of headers) findings.security.push(finding(h.present?'good':'warning',h.name+(h.present?' is present':' is missing'),h.present?(h.value.slice(0,220)||h.description):h.description,!h.present?({
+    for (const h of headers) findings.security.push(finding(snapshotMode?'info':h.present?'good':'warning',snapshotMode?h.name+' not available in snapshot':h.name+(h.present?' is present':' is missing'),snapshotMode?'An HTML export does not include the original HTTP response headers.':h.present?(h.value.slice(0,220)||h.description):h.description,!snapshotMode&&!h.present?({
       'Content-Security-Policy':'Consider a CSP tailored to your scripts and resources; test in report-only mode first.',
       'Strict-Transport-Security':'For HTTPS-only sites, consider HSTS after confirming all subdomains work on HTTPS.',
       'X-Frame-Options':'Consider frame-ancestors in CSP or X-Frame-Options to control embedding.',
