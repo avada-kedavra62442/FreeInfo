@@ -59,7 +59,7 @@ async function safeFetch(startUrl, method = 'GET', accept = 'text/html,applicati
     try {
       response = await fetch(current, {
         method, redirect: 'manual', signal: controller.signal,
-        headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeInfo)', Accept: accept }
+        headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeAssess)', Accept: accept }
       });
     } catch (error) {
       if (error.name === 'AbortError') throw new Error('The website took too long to respond.');
@@ -167,8 +167,8 @@ async function probeResource(rawUrl, pageUrl) {
   const timer = setTimeout(() => controller.abort(), RESOURCE_PROBE_TIMEOUT_MS);
   try {
     await validatePublicUrl(target.href);
-    let response = await fetch(target.href, { method: 'HEAD', redirect: 'manual', signal: controller.signal, headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeInfo)' } });
-    if ([405, 501].includes(response.status)) response = await fetch(target.href, { method: 'GET', redirect: 'manual', signal: controller.signal, headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeInfo)', Range: 'bytes=0-0' } });
+    let response = await fetch(target.href, { method: 'HEAD', redirect: 'manual', signal: controller.signal, headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeAssess)' } });
+    if ([405, 501].includes(response.status)) response = await fetch(target.href, { method: 'GET', redirect: 'manual', signal: controller.signal, headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeAssess)', Range: 'bytes=0-0' } });
     if (response.body) await response.body.cancel().catch(() => {});
     return { url: target.href, status: response.status, ok: response.status < 400, reason: response.status >= 400 ? `HTTP ${response.status}` : undefined };
   } catch (error) {
