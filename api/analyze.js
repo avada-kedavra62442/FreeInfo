@@ -149,8 +149,8 @@ function collectMeta(html, pageUrl) {
   const linksWithoutHref = anchors.filter(t=>!attr(t,'href'));
   const hasViewport = !!tags(html,'meta').find(t=>attr(t,'name').toLowerCase()==='viewport');
   const hasFavicon = tags(html,'link').some(t=>/icon/i.test(attr(t,'rel')) && !!attr(t,'href'));
-  const hasNavigation = /<nav\\b/i.test(html);
-  const hasMainLandmark = /<main\\b/i.test(html);
+  const hasNavigation = /<nav\b/i.test(html);
+  const hasMainLandmark = /<main\b/i.test(html);
   const scripts = tags(html,'script').filter(t=>attr(t,'src'));
   const stylesheets = tags(html,'link').filter(t=>attr(t,'rel').toLowerCase().split(/\s+/).includes('stylesheet'));
   const resources = new Set([...scripts.map(t=>attr(t,'src')),...stylesheets.map(t=>attr(t,'href')),...imgs.map(t=>attr(t,'src'))].filter(Boolean).map(s=>{try{return new URL(s,pageUrl).href}catch{return s}}));
