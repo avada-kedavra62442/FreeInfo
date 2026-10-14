@@ -221,7 +221,7 @@ export default async function handler(req, res) {
     const initialUrl = await validatePublicUrl(input.url);
     if (initialUrl.protocol !== 'https:' && initialUrl.protocol !== 'http:') return res.status(400).json({error:'Only public HTTP and HTTPS websites can be checked.'});
     const snapshotMode = typeof input.htmlSnapshot === 'string';
-    if (snapshotMode && Buffer.byteLength(input.htmlSnapshot, 'utf8') > 3 * 1024 * 1024) return res.status(413).json({error:'Saved HTML snapshots must be 3 MB or smaller.'});
+    if (snapshotMode && Buffer.byteLength(input.htmlSnapshot, 'utf8') > 3.5 * 1024 * 1024) return res.status(413).json({error:'Saved HTML snapshots must be 3.5 MB or smaller.'});
     const response = snapshotMode
       ? { ok: true, status: 200, statusText: 'Imported HTML snapshot', url: initialUrl.href, headers: { get: () => null } }
       : await safeFetch(initialUrl.href);
