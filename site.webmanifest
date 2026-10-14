@@ -1,12 +1,53 @@
 {
-  "name": "FreeInfo — Website Toolkit",
-  "short_name": "FreeInfo",
-  "description": "Free website analysis for SEO, performance, accessibility and security.",
+  "name": "FreeAssess — Website Quality Assessor",
+  "short_name": "FreeAssess",
+  "description": "Assess website quality across security, SEO, performance, accessibility and UI/UX.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07100e",
   "theme_color": "#07100e",
   "icons": [
-    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon-167x167.svg",
+      "sizes": "167x167",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon-152x152.svg",
+      "sizes": "152x152",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon-120x120.svg",
+      "sizes": "120x120",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon-114x114.svg",
+      "sizes": "114x114",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon-76x76.svg",
+      "sizes": "76x76",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }
