@@ -86,7 +86,7 @@ function Analyzer() {
       setUrl(parsed.href);
       const htmlSnapshot = htmlFile ? await htmlFile.text() : null;
       if (htmlFile && !htmlSnapshot.trim()) throw new Error('The selected HTML file is empty. Save the webpage again using your browser’s “Save page as” option.');
-      if (htmlFile && new Blob([htmlSnapshot]).size > 3 * 1024 * 1024) throw new Error('For login-protected pages, the saved HTML file must be 3 MB or smaller. Try saving only the current page as HTML.');
+      if (htmlFile && new Blob([htmlSnapshot]).size > 3.5 * 1024 * 1024) throw new Error('For login-protected pages, the saved HTML file must be 3.5 MB or smaller because of the hosting request-size limit.');
       setBusy(true);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 55000);
@@ -167,7 +167,7 @@ function Analyzer() {
               const file = e.target.files?.[0] || null;
               setError('');
               if (file && !/\.html?$/i.test(file.name) && file.type !== 'text/html') { setHtmlFile(null); setError('Choose a saved .html or .htm webpage file.'); e.target.value = ''; return; }
-              if (file && file.size > 3 * 1024 * 1024) { setHtmlFile(null); setError('Saved HTML files must be 3 MB or smaller. Save only the current page as HTML and try again.'); e.target.value = ''; return; }
+              if (file && file.size > 3.5 * 1024 * 1024) { setHtmlFile(null); setError('Saved HTML files must be 3.5 MB or smaller because of the hosting request-size limit.'); e.target.value = ''; return; }
               setHtmlFile(file);
             }} />
             {htmlFile && <p className="snapshot-selected">Selected: {htmlFile.name} · {(htmlFile.size / 1024).toFixed(0)} KB. Enter its original public URL above, then click Analyze website.</p>}
