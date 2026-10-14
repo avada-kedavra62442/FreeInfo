@@ -65,8 +65,10 @@ function Analyzer() {
     const title = String(item?.title || '').toLowerCase();
     if (/content-security-policy|strict-transport-security|form controls may lack labels|images missing alternative text|missing page title|no page title/.test(title)) return 1;
     if (/large html document|page resource references|x-frame-options|x-content-type-options|missing.*title|title not found/.test(title)) return 2;
-    if (/meta description|heading levels|h1 heading|canonical/.test(title)) return 3;
-    if (/social preview|image dimensions|sitemap/.test(title)) return 4;
+    if (/content-security-policy|strict-transport-security|https|form controls may lack labels|images missing alternative text|missing page title|no page title|mobile viewport metadata missing/.test(title)) return 1;
+    if (/large html document|page resource references|x-frame-options|x-content-type-options|links without destinations/.test(title)) return 2;
+    if (/meta description|heading levels|h1 heading|canonical|favicon/.test(title)) return 3;
+    if (/social preview|image dimensions|sitemap|navigation landmark/.test(title)) return 4;
     return item?.level === 'warning' ? 3 : 5;
   };
   const fixes = allFindings.filter(x => x.level === 'warning').sort((a, b) => priorityRank(a) - priorityRank(b));
@@ -85,7 +87,8 @@ function Analyzer() {
       if (!parsed.hostname.includes('.') || parsed.hostname === 'localhost') throw new Error('Enter a full public domain, such as example.com.');
       setUrl(parsed.href);
       const htmlSnapshot = htmlFile ? await htmlFile.text() : null;
-      if (htmlSnapshot && htmlSnapshot.length > 3 * 1024 * 1024) throw new Error('For login-protected pages, the saved HTML file must be 3 MB or smaller. Try saving only the current page as HTML.');
+      if (htmlFile && !htmlSnapshot.trim()) throw new Error('The selected HTML file is empty. Save the webpage again using your browser’s “Save page as” option.');
+      if (htmlFile && new Blob([htmlSnapshot]).size > 3 * 1024 * 1024) throw new Error('For login-protected pages, the saved HTML file must be 3 MB or smaller. Try saving only the current page as HTML.');
       setBusy(true);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 55000);
