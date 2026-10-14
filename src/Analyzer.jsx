@@ -94,8 +94,22 @@ function Analyzer() {
       try {
         response = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: parsed.href, ...(htmlSnapshot ? { htmlSnapshot } : {}) }), signal: controller.signal });
       } finally { clearTimeout(timeout); }
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'The website could not be checked. Try again with its homepage URL.');
+      const responseText = await response.text().catch(() => '');
+      let data = {};
+      try { data = responseText ? JSON.parse(responseText) : {}; } catch {}
+      if (!response.ok) {
+        const bodyMessage = typeof data.error === 'string' ? data.error : '';
+        const readableBody = responseText.trim() && !responseText.trim().startsWith('<') ? responseText.trim().slice(0, 240) : '';
+        const statusMessage = response.status === 404
+          ? "FreeAssess's analysis endpoint was not found in this deployment (HTTP 404)."
+          : response.status >= 500
+            ? `FreeAssess's analysis service failed on the server (HTTP ${response.status}). Check the Vercel Function Logs for /api/analyze.`
+            : `FreeAssess could not analyze this page (HTTP ${response.status}).`;
+        throw new Error(bodyMessage || readableBody || statusMessage);
+      }
+      if (!data || typeof data !== 'object' || !data.scores || !data.findings) {
+        throw new Error("FreeAssess's analysis service returned an unexpected response. Check the Vercel Function Logs for /api/analyze.");
+      }
       setReport(data);
       setTab('overview');
       document.getElementById('report')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
