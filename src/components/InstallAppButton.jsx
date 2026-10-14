@@ -31,14 +31,14 @@ export default function InstallAppButton() {
   }
 
   return <>
-    <button className="install-app-button" type="button" onClick={install} aria-label="Install FreeInfo">
+    <button className="install-app-button" type="button" onClick={install} aria-label="Install FreeAssess">
       {promptEvent ? <Download size={14}/> : <Smartphone size={14}/>}<span>Install</span>
     </button>
     {helpOpen && <div className="install-help-backdrop" onClick={() => setHelpOpen(false)}>
       <section className="install-help" role="dialog" aria-modal="true" aria-labelledby="install-help-title" onClick={event => event.stopPropagation()}>
         <button className="install-help-close" type="button" onClick={() => setHelpOpen(false)} aria-label="Close install instructions"><X size={17}/></button>
-        <div className="install-help-icon"><Smartphone size={22}/></div><h2 id="install-help-title">Install FreeInfo</h2>
-        {appleMobile ? <ol><li>Open this site in <strong>Safari</strong>.</li><li>Tap the <strong>Share</strong> icon.</li><li>Choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.</li></ol> : <ol><li>Open FreeInfo in Chrome or a supported browser.</li><li>Open the browser menu.</li><li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li></ol>}
+        <div className="install-help-icon"><Smartphone size={22}/></div><h2 id="install-help-title">Install FreeAssess</h2>
+        {appleMobile ? <ol><li>Open this site in <strong>Safari</strong>.</li><li>Tap the <strong>Share</strong> icon.</li><li>Choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.</li></ol> : <ol><li>Open FreeAssess in Chrome or a supported browser.</li><li>Open the browser menu.</li><li>Choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li></ol>}
         <p>The app shell can open from your home screen. Website assessments still require internet access.</p>
       </section>
     </div>}
