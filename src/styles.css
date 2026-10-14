@@ -38,3 +38,17 @@
 @media(max-width:900px){.footer-main{grid-template-columns:1.3fr 1fr 1fr;gap:28px}.footer-brand-block{grid-row:span 2}}
 @media(max-width:640px){.topbar{padding:0 16px;gap:12px}.topnav{gap:12px;font-size:10px}.topbar .nav-pill{display:none}.install-app-button{padding:0 11px;min-height:36px}.site-footer{padding:0 18px;margin-top:52px}.footer-main{grid-template-columns:1fr 1fr;gap:28px 20px;padding:32px 0}.footer-brand-block{grid-column:1/-1;grid-row:auto}.footer-bottom{align-items:flex-start;flex-direction:column;gap:12px;font-size:8px;line-height:1.8}.footer-line{width:85px}}
 @media(max-width:420px){.topnav a:not(:first-child){display:none}.brand{gap:8px}.brand-mark{width:35px;height:35px}.install-app-button{font-size:10px}.footer-socials{gap:12px}}
+
+
+/* FreeAssess audit clarity and severity states */
+.score-caveat{margin:14px 0 0!important;padding:11px 13px;border:1px solid rgba(153,205,181,.2);border-radius:10px;background:rgba(9,27,21,.58);color:#a9c2b6!important;font-size:11px!important;line-height:1.65!important}
+.finding-icon.critical{color:#ff8e84;background:rgba(181,47,47,.14);border-color:rgba(255,100,100,.3)}
+.severity.critical{color:#ff958b;background:rgba(181,47,47,.14);border:1px solid rgba(255,100,100,.28)}
+.security-check-list{display:grid;gap:10px}
+.security-check{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid var(--line,rgba(150,190,170,.16));border-radius:13px;background:rgba(7,19,15,.35)}
+.security-check strong{display:block;color:var(--text,#e8f1ec);font-size:13px}
+.security-check p{margin:6px 0 0;color:var(--muted,#9eb5a9);font-size:12px;line-height:1.6}
+.security-status{flex-shrink:0;font-size:9px;letter-spacing:.08em;font-weight:800;padding:6px 8px;border-radius:7px;color:#a9c2b6;background:rgba(140,170,155,.1)}
+.security-status.pass{color:#92e3b5;background:rgba(55,160,100,.12)}
+.security-status.fail,.security-status.review{color:#ff9a8e;background:rgba(190,60,60,.13)}
+@media(max-width:560px){.security-check{flex-direction:column;gap:10px}.score-caveat{font-size:10px!important}}
