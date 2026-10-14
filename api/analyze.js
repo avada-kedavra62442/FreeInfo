@@ -2,8 +2,8 @@ import dns from 'node:dns/promises';
 import net from 'node:net';
 
 const MAX_HTML_BYTES = 25 * 1024 * 1024;
-const FETCH_TIMEOUT_MS = 12500;
-const RESOURCE_PROBE_TIMEOUT_MS = 2500;
+const FETCH_TIMEOUT_MS = 6000;
+const RESOURCE_PROBE_TIMEOUT_MS = 1500;
 const MAX_RESOURCE_PROBES = 12;
 
 function isPrivateIPv4(ip) {
@@ -308,6 +308,7 @@ export default async function handler(req, res) {
       scores,findings
     });
   } catch (error) {
+    console.error('[FreeAssess] Website analysis failed:', error?.stack || error);
     const message = error?.message || 'Website analysis failed. Please try again.';
     const status = /only public|private|local network|resolve|valid website|username|safety|http and https|2,048/i.test(message) ? 400 : /25 MB|too long|redirect/i.test(message) ? 422 : 502;
     return res.status(status).json({error:message});
