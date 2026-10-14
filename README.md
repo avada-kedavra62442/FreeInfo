@@ -1,6 +1,6 @@
-# FreeInfo — Free Website Assessor
+# FreeAssess — Free Website Assessor
 
-FreeInfo is a free Emerald-and-Silver website assessor that turns accessible website signals into a practical list of improvements.
+FreeAssess is a free Emerald-and-Silver website assessor that turns accessible website signals into a practical list of improvements.
 
 ## Routes
 - `/` — Long public homepage with features, workflow, FAQs and footer.
@@ -24,7 +24,7 @@ npm run dev
 Import this repository into Vercel with the default Vite settings. `api/analyze.js` is a Vercel serverless function. The `/assess` route is explicitly rewritten to the SPA entry point.
 
 ## Important limitations
-A URL scan can inspect only the response FreeInfo can access. It does not sign in, bypass access controls, or ask for passwords/session cookies. Saved HTML snapshots cover static markup only; they cannot reproduce authenticated interactions or reveal original response headers. JavaScript-rendered UI, real network waterfalls, exact image transfer sizes, Core Web Vitals, colour contrast and keyboard behaviour require browser-based checks.
+A URL scan can inspect only the response FreeAssess can access. It does not sign in, bypass access controls, or ask for passwords/session cookies. Saved HTML snapshots cover static markup only; they cannot reproduce authenticated interactions or reveal original response headers. JavaScript-rendered UI, real network waterfalls, exact image transfer sizes, Core Web Vitals, colour contrast and keyboard behaviour require browser-based checks.
 
 The URL analyzer rejects local/private IP ranges and validates redirect destinations. The 25 MB HTML limit is a practical serverless limit, not an unlimited or terabyte-scale crawler. Results are directional signals, not a certification or substitute for a professional audit.
 
