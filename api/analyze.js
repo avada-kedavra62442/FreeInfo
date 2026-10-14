@@ -95,7 +95,7 @@ async function readLimited(response) {
     total += value.byteLength;
     if (total > MAX_HTML_BYTES) {
       await reader.cancel().catch(() => {});
-      throw new Error('This page is larger than the 3 MB analysis limit. Try a lighter page.');
+      throw new Error('This page is larger than the 25 MB analysis limit. Try a lighter page.');
     }
     chunks.push(Buffer.from(value));
   }
@@ -143,13 +143,22 @@ function collectMeta(html, pageUrl) {
   });
   const headings = [...html.matchAll(/<h([1-6])\b[^>]*>/gi)].map(m=>Number(m[1]));
   const headingSkips = headings.slice(1).some((level,i)=>level > headings[i] + 1);
+  const buttons = tags(html,'button');
+  const anchors = tags(html,'a');
+  const imagesWithLogoClues = imgs.filter(t=>/logo|brand|wordmark/i.test(attr(t,'alt')+' '+attr(t,'src')+' '+attr(t,'class')));
+  const linksWithoutHref = anchors.filter(t=>!attr(t,'href'));
+  const hasViewport = !!tags(html,'meta').find(t=>attr(t,'name').toLowerCase()==='viewport');
+  const hasFavicon = tags(html,'link').some(t=>/icon/i.test(attr(t,'rel')) && !!attr(t,'href'));
+  const hasNavigation = /<nav\\b/i.test(html);
+  const hasMainLandmark = /<main\\b/i.test(html);
   const scripts = tags(html,'script').filter(t=>attr(t,'src'));
   const stylesheets = tags(html,'link').filter(t=>attr(t,'rel').toLowerCase().split(/\s+/).includes('stylesheet'));
   const resources = new Set([...scripts.map(t=>attr(t,'src')),...stylesheets.map(t=>attr(t,'href')),...imgs.map(t=>attr(t,'src'))].filter(Boolean).map(s=>{try{return new URL(s,pageUrl).href}catch{return s}}));
   const pageSize = Number(html.length);
   const seo = {title,description,canonical:canonicalTag?new URL(attr(canonicalTag,'href'),pageUrl).href:'',robots,h1Count:h1.length,h2Count:h2.length,h1,h2,openGraph,imagesWithoutAlt:imgsWithoutAlt.length,sitemap:false};
   const accessibility = {images:imgs.length,imagesWithoutAlt:imgsWithoutAlt.length,formControls:inputs.length,formIssues:formIssues.length,headingSkips,headings:headings.length};
-  return {seo,accessibility,resources:[...resources],scripts: scripts.length,stylesheets: stylesheets.length,images:imgs.length,imagesWithoutDimensions:imagesWithoutDimensions.length,pageSize};
+  const uiux = {buttons:buttons.length,links:anchors.length,linksWithoutHref:linksWithoutHref.length,images:imgs.length,logoCandidates:imagesWithLogoClues.length,hasViewport,hasFavicon,hasNavigation,hasMainLandmark};
+  return {seo,accessibility,uiux,resources:[...resources],scripts: scripts.length,stylesheets: stylesheets.length,images:imgs.length,imagesWithoutDimensions:imagesWithoutDimensions.length,pageSize};
 }
 async function sitemapExists(pageUrl) {
   const u = new URL('/sitemap.xml', pageUrl);
@@ -170,8 +179,8 @@ function scoreAll(findings) {
     const warn = a.filter(x=>x.level==='warning').length;
     return Math.max(15,Math.min(100,Math.round(100 - warn*14 + good*2)));
   };
-  const seo=group(findings.seo), performance=group(findings.performance), accessibility=group(findings.accessibility), security=group(findings.security);
-  return {seo,performance,accessibility,security,overall:Math.round(seo*.3+performance*.25+accessibility*.2+security*.25)};
+  const seo=group(findings.seo), performance=group(findings.performance), accessibility=group(findings.accessibility), security=group(findings.security), uiux=group(findings.uiux || []);
+  return {seo,performance,accessibility,security,uiux,overall:Math.round(seo*.25+performance*.2+accessibility*.2+security*.2+uiux*.15)};
 }
 export default async function handler(req, res) {
   res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -197,7 +206,7 @@ export default async function handler(req, res) {
     const parsed = collectMeta(html, finalUrl);
     parsed.seo.sitemap = snapshotMode ? false : await sitemapExists(finalUrl);
     const headers = SECURITY_HEADERS.map(([name,description])=>({name,description,present:!!response.headers.get(name.toLowerCase()),value:response.headers.get(name.toLowerCase())||''}));
-    const findings = {seo:[],performance:[],accessibility:[],security:[]};
+    const findings = {seo:[],performance:[],accessibility:[],security:[],uiux:[]};
     if (parsed.seo.title) findings.seo.push(finding('good','Page title found',`Title: “${parsed.seo.title.slice(0,140)}”`));
     else findings.seo.push(finding('warning','Missing page title','Search engines and browser tabs use the title to identify the page.','Add a concise, unique <title> in the document head.'));
     if (parsed.seo.title && parsed.seo.title.length > 60) findings.seo.push(finding('warning','Title may be long',`The title is ${parsed.seo.title.length} characters. Search snippets may truncate it.`,'Consider a descriptive title around 50–60 characters; this is a guideline, not a hard limit.'));
@@ -230,6 +239,13 @@ export default async function handler(req, res) {
       'Referrer-Policy':'Consider strict-origin-when-cross-origin or another policy matching your privacy needs.',
       'Permissions-Policy':'Limit browser features your site does not need.'
     }[h.name]):undefined));
+    findings.uiux.push(finding(parsed.uiux.hasViewport?'good':'warning',parsed.uiux.hasViewport?'Mobile viewport metadata detected':'Mobile viewport metadata missing',parsed.uiux.hasViewport?'The source declares a viewport, an important mobile-layout baseline.':'The source has no detectable viewport meta tag. Check mobile scaling and responsive behaviour.','Add <meta name="viewport" content="width=device-width, initial-scale=1"> to the document head when appropriate.'));
+    findings.uiux.push(finding(parsed.uiux.linksWithoutHref?'warning':'good',parsed.uiux.linksWithoutHref?'Links without destinations detected':'Link destination markup check passed',parsed.uiux.linksWithoutHref+' of '+parsed.uiux.links+' anchor elements have no href attribute. This does not test whether destinations actually load.',parsed.uiux.linksWithoutHref?'Give navigation links a valid destination, or use a button for an action.':undefined));
+    findings.uiux.push(finding(parsed.uiux.hasFavicon?'good':'warning',parsed.uiux.hasFavicon?'Favicon reference detected':'No favicon link detected',parsed.uiux.hasFavicon?'A link element references an icon asset.':'No icon link was detected in the source. Verify browser tab and saved-home-screen branding.','Provide a favicon and platform-appropriate home-screen icons.'));
+    findings.uiux.push(finding(parsed.uiux.logoCandidates?'good':'info',parsed.uiux.logoCandidates?'Logo or brand image clue detected':'Logo could not be confirmed from image markup',parsed.uiux.logoCandidates?'Found '+parsed.uiux.logoCandidates+' image tag(s) whose alt, source or class mentions logo/brand.':'Logos may be implemented as CSS, inline SVG or components, so this heuristic may miss them.'));
+    findings.uiux.push(finding(parsed.uiux.hasNavigation?'good':'info',parsed.uiux.hasNavigation?'Navigation landmark detected':'Navigation landmark not detected',parsed.uiux.hasNavigation?'A <nav> element is present in the HTML source.':'No <nav> element was detected; check whether navigation is clearly structured.'));
+    findings.uiux.push(finding(parsed.uiux.hasMainLandmark?'good':'info',parsed.uiux.hasMainLandmark?'Main content landmark detected':'Main content landmark not detected',parsed.uiux.hasMainLandmark?'A <main> element is present in the HTML source.':'No <main> element was detected; confirm the page has a clear primary-content landmark.'));
+    findings.uiux.push(finding('info','Button and route functionality needs a browser test','The source contains '+parsed.uiux.buttons+' button element(s) and '+parsed.uiux.links+' link(s). Static HTML cannot confirm event handlers, destination response codes, login flows, overlays or page-to-page navigation.','Run browser-based smoke tests for every important button, form, menu and route at desktop and mobile widths.'));
     const scores=scoreAll(findings);
     const totalMs=Date.now()-start;
     return res.status(200).json({
@@ -238,6 +254,7 @@ export default async function handler(req, res) {
       seo:parsed.seo,
       performance:{pageSizeBytes:body.length,pageSizeLabel:body.length>=1024*1024?(body.length/1024/1024).toFixed(2)+' MB':(body.length/1024).toFixed(1)+' KB',requests:parsed.resources.length,imageCount:parsed.images,imagesWithoutDimensions:parsed.imagesWithoutDimensions,scripts:parsed.scripts,stylesheets:parsed.stylesheets},
       accessibility:parsed.accessibility,
+      uiux:parsed.uiux,
       security:{headers},
       scores,findings
     });
