@@ -3,14 +3,8 @@ import net from 'node:net';
 
 const MAX_HTML_BYTES = 25 * 1024 * 1024;
 const FETCH_TIMEOUT_MS = 12500;
-const SECURITY_HEADERS = [
-  ['Content-Security-Policy', 'Restricts what scripts, styles and other resources a page may load.'],
-  ['Strict-Transport-Security', 'Asks browsers to use HTTPS for future connections.'],
-  ['X-Frame-Options', 'Helps prevent a page from being embedded in a hostile frame.'],
-  ['X-Content-Type-Options', 'Prevents MIME-type sniffing.'],
-  ['Referrer-Policy', 'Controls how much referrer information browsers send.'],
-  ['Permissions-Policy', 'Limits access to browser features such as camera and microphone.']
-];
+const RESOURCE_PROBE_TIMEOUT_MS = 2500;
+const MAX_RESOURCE_PROBES = 12;
 
 function isPrivateIPv4(ip) {
   const parts = ip.split('.').map(Number);
@@ -39,17 +33,17 @@ async function validatePublicUrl(raw) {
   if (u.username || u.password) throw new Error('URLs containing usernames or passwords are not accepted.');
   const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
   if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')) {
-    throw new Error('For safety, FreeInfo only checks public websites.');
+    throw new Error('For safety, FreeAssess only checks public websites.');
   }
   if (net.isIP(host)) {
     const privateIp = net.isIPv4(host) ? isPrivateIPv4(host) : isPrivateIPv6(host);
-    if (privateIp) throw new Error('For safety, FreeInfo cannot access private or local network addresses.');
+    if (privateIp) throw new Error('For safety, FreeAssess cannot access private or local network addresses.');
   } else {
     let addresses;
     try { addresses = await dns.lookup(host, { all: true, verbatim: true }); }
     catch { throw new Error('This domain could not be resolved. Check the URL and try again.'); }
     if (!addresses.length || addresses.some(a => net.isIPv4(a.address) ? isPrivateIPv4(a.address) : isPrivateIPv6(a.address))) {
-      throw new Error('For safety, FreeInfo only checks domains that resolve to public IP addresses.');
+      throw new Error('For safety, FreeAssess only checks domains that resolve to public IP addresses.');
     }
   }
   u.hash = '';
@@ -65,11 +59,11 @@ async function safeFetch(startUrl, method = 'GET', accept = 'text/html,applicati
     try {
       response = await fetch(current, {
         method, redirect: 'manual', signal: controller.signal,
-        headers: { 'User-Agent': 'FreeInfoBot/1.0 (+https://github.com/avada-kedavra62442/FreeInfo)', Accept: accept }
+        headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeInfo)', Accept: accept }
       });
     } catch (error) {
       if (error.name === 'AbortError') throw new Error('The website took too long to respond.');
-      throw new Error('FreeInfo could not connect to this website. It may block automated requests.');
+      throw new Error('FreeAssess could not connect to this website. It may block automated requests.');
     } finally { clearTimeout(timer); }
     if ([301,302,303,307,308].includes(response.status)) {
       const location = response.headers.get('location');
@@ -147,6 +141,11 @@ function collectMeta(html, pageUrl) {
   const anchors = tags(html,'a');
   const imagesWithLogoClues = imgs.filter(t=>/logo|brand|wordmark/i.test(attr(t,'alt')+' '+attr(t,'src')+' '+attr(t,'class')));
   const linksWithoutHref = anchors.filter(t=>!attr(t,'href'));
+  const newTabLinksWithoutRel = anchors.filter(t=>attr(t,'target').toLowerCase()==='_blank' && !/\\bnoopener\\b/i.test(attr(t,'rel')));
+  const forms = tags(html,'form');
+  const formActions = forms.map(t=>({action:attr(t,'action'),method:(attr(t,'method')||'get').toLowerCase()}));
+  const imageSources = imgs.map(t=>attr(t,'src') || attr(t,'data-src')).filter(Boolean);
+  const anchorTargets = anchors.map(t=>attr(t,'href')).filter(h=>h && !/^(?:#|mailto:|tel:|javascript:|data:)/i.test(h));
   const hasViewport = !!tags(html,'meta').find(t=>attr(t,'name').toLowerCase()==='viewport');
   const hasFavicon = tags(html,'link').some(t=>/icon/i.test(attr(t,'rel')) && !!attr(t,'href'));
   const hasNavigation = /<nav\b/i.test(html);
@@ -157,8 +156,33 @@ function collectMeta(html, pageUrl) {
   const pageSize = Number(html.length);
   const seo = {title,description,canonical:canonicalTag?new URL(attr(canonicalTag,'href'),pageUrl).href:'',robots,h1Count:h1.length,h2Count:h2.length,h1,h2,openGraph,imagesWithoutAlt:imgsWithoutAlt.length,sitemap:false};
   const accessibility = {images:imgs.length,imagesWithoutAlt:imgsWithoutAlt.length,formControls:inputs.length,formIssues:formIssues.length,headingSkips,headings:headings.length};
-  const uiux = {buttons:buttons.length,links:anchors.length,linksWithoutHref:linksWithoutHref.length,images:imgs.length,logoCandidates:imagesWithLogoClues.length,hasViewport,hasFavicon,hasNavigation,hasMainLandmark};
+  const uiux = {buttons:buttons.length,links:anchors.length,linksWithoutHref:linksWithoutHref.length,newTabLinksWithoutRel:newTabLinksWithoutRel.length,forms:forms.length,images:imgs.length,logoCandidates:imagesWithLogoClues.length,imageSources,anchorTargets,hasViewport,hasFavicon,hasNavigation,hasMainLandmark};
   return {seo,accessibility,uiux,resources:[...resources],scripts: scripts.length,stylesheets: stylesheets.length,images:imgs.length,imagesWithoutDimensions:imagesWithoutDimensions.length,pageSize};
+}
+async function probeResource(rawUrl, pageUrl) {
+  let target;
+  try { target = new URL(rawUrl, pageUrl); } catch { return { url: rawUrl, status: 0, ok: false, reason: 'Invalid URL' }; }
+  if (!['http:', 'https:'].includes(target.protocol)) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), RESOURCE_PROBE_TIMEOUT_MS);
+  try {
+    await validatePublicUrl(target.href);
+    const response = await fetch(target.href, { method: 'HEAD', redirect: 'manual', signal: controller.signal, headers: { 'User-Agent': 'FreeAssessBot/1.0 (+https://github.com/avada-kedavra62442/FreeInfo)' } });
+    return { url: target.href, status: response.status, ok: response.status < 400, reason: response.status >= 400 ? `HTTP ${response.status}` : undefined };
+  } catch (error) {
+    return { url: target.href, status: 0, ok: false, reason: error?.name === 'AbortError' ? 'Timed out' : 'Could not verify' };
+  } finally { clearTimeout(timer); }
+}
+async function probePageResources(parsed, pageUrl) {
+  const unique = [...new Set([
+    ...parsed.uiux.imageSources.slice(0, MAX_RESOURCE_PROBES),
+    ...parsed.uiux.anchorTargets.slice(0, MAX_RESOURCE_PROBES)
+  ])].slice(0, MAX_RESOURCE_PROBES);
+  const results = await Promise.all(unique.map(url => probeResource(url, pageUrl)));
+  const checked = results.filter(Boolean);
+  const images = checked.filter(x => parsed.uiux.imageSources.some(raw => { try { return new URL(raw, pageUrl).href === x.url; } catch { return false; } }));
+  const links = checked.filter(x => parsed.uiux.anchorTargets.some(raw => { try { return new URL(raw, pageUrl).href === x.url; } catch { return false; } }));
+  return { checked: checked.length, failedImages: images.filter(x => !x.ok), failedLinks: links.filter(x => !x.ok), unverified: checked.filter(x => x.reason === 'Could not verify' || x.reason === 'Timed out').length };
 }
 async function sitemapExists(pageUrl) {
   const u = new URL('/sitemap.xml', pageUrl);
@@ -174,13 +198,15 @@ async function sitemapExists(pageUrl) {
   } catch { return false; }
 }
 function scoreAll(findings) {
-  const group = (a) => {
-    const good = a.filter(x=>x.level==='good').length;
-    const warn = a.filter(x=>x.level==='warning').length;
-    return Math.max(15,Math.min(100,Math.round(100 - warn*14 + good*2)));
+  const group = (items) => {
+    const critical = items.filter(x => x.level === 'critical').length;
+    const warnings = items.filter(x => x.level === 'warning').length;
+    return Math.max(0, Math.min(100, Math.round(100 - critical * 30 - warnings * 18)));
   };
   const seo=group(findings.seo), performance=group(findings.performance), accessibility=group(findings.accessibility), security=group(findings.security), uiux=group(findings.uiux || []);
-  return {seo,performance,accessibility,security,uiux,overall:Math.round(seo*.25+performance*.2+accessibility*.2+security*.2+uiux*.15)};
+  const raw = Math.round(seo*.2 + performance*.2 + accessibility*.2 + security*.2 + uiux*.2);
+  // This is a static assessment. Until real-browser visual and interaction checks run, do not present it as a near-perfect full-site audit.
+  return {seo,performance,accessibility,security,uiux,overall:Math.min(79,raw),scoreType:'static-source-assessment',browserChecksComplete:false};
 }
 export default async function handler(req, res) {
   res.setHeader('Content-Type','application/json; charset=utf-8');
@@ -205,7 +231,7 @@ export default async function handler(req, res) {
     const finalUrl = response.url || initialUrl.href;
     const parsed = collectMeta(html, finalUrl);
     parsed.seo.sitemap = snapshotMode ? false : await sitemapExists(finalUrl);
-    const headers = SECURITY_HEADERS.map(([name,description])=>({name,description,present:!!response.headers.get(name.toLowerCase()),value:response.headers.get(name.toLowerCase())||''}));
+    const securityChecks = [];
     const findings = {seo:[],performance:[],accessibility:[],security:[],uiux:[]};
     if (parsed.seo.title) findings.seo.push(finding('good','Page title found',`Title: “${parsed.seo.title.slice(0,140)}”`));
     else findings.seo.push(finding('warning','Missing page title','Search engines and browser tabs use the title to identify the page.','Add a concise, unique <title> in the document head.'));
@@ -246,6 +272,35 @@ export default async function handler(req, res) {
     findings.uiux.push(finding(parsed.uiux.hasNavigation?'good':'info',parsed.uiux.hasNavigation?'Navigation landmark detected':'Navigation landmark not detected',parsed.uiux.hasNavigation?'A <nav> element is present in the HTML source.':'No <nav> element was detected; check whether navigation is clearly structured.'));
     findings.uiux.push(finding(parsed.uiux.hasMainLandmark?'good':'info',parsed.uiux.hasMainLandmark?'Main content landmark detected':'Main content landmark not detected',parsed.uiux.hasMainLandmark?'A <main> element is present in the HTML source.':'No <main> element was detected; confirm the page has a clear primary-content landmark.'));
     findings.uiux.push(finding('info','Button and route functionality needs a browser test','The source contains '+parsed.uiux.buttons+' button element(s) and '+parsed.uiux.links+' link(s). Static HTML cannot confirm event handlers, destination response codes, login flows, overlays or page-to-page navigation.','Run browser-based smoke tests for every important button, form, menu and route at desktop and mobile widths.'));
+    const resourceChecks = snapshotMode ? { checked: 0, failedImages: [], failedLinks: [], unverified: 0 } : await probePageResources(parsed, finalUrl);
+    parsed.uiux.brokenImages = resourceChecks.failedImages.length;
+    parsed.uiux.brokenLinks = resourceChecks.failedLinks.length;
+    parsed.uiux.resourcesChecked = resourceChecks.checked;
+    parsed.uiux.failedImageUrls = resourceChecks.failedImages.map(x => ({ url: x.url, status: x.status, reason: x.reason }));
+    parsed.uiux.failedLinkUrls = resourceChecks.failedLinks.map(x => ({ url: x.url, status: x.status, reason: x.reason }));
+    findings.uiux.push(finding(parsed.uiux.brokenImages ? 'critical' : 'good', parsed.uiux.brokenImages ? 'Broken image assets detected' : 'Sampled image assets responded', `${parsed.uiux.brokenImages} of the checked image resources failed or returned an error. ${resourceChecks.checked} unique image/link URLs were probed in total.`, parsed.uiux.brokenImages ? 'Replace or repair the failing image URLs. Confirm brand logos use the correct official assets; this automated check cannot verify logo identity.' : 'Manually confirm logos and brand marks are the correct ones; a successful URL response does not prove the image is the right logo.'));
+    findings.uiux.push(finding(parsed.uiux.brokenLinks ? 'critical' : 'info', parsed.uiux.brokenLinks ? 'Broken link destinations detected' : 'Link destinations need interaction verification', `${parsed.uiux.brokenLinks} of the sampled link destinations returned an error. A successful HTTP response still does not prove the destination or client-side navigation works.`, parsed.uiux.brokenLinks ? 'Fix the failing links and test important user journeys in a browser.' : 'Test navigation, forms and important user journeys in a real browser.'));
+    findings.uiux.push(finding(parsed.uiux.newTabLinksWithoutRel ? 'warning' : 'good', parsed.uiux.newTabLinksWithoutRel ? 'New-tab links missing rel=noopener' : 'New-tab link isolation check passed', `${parsed.uiux.newTabLinksWithoutRel} links opening a new tab lack a detectable noopener rel token.`, parsed.uiux.newTabLinksWithoutRel ? 'Add rel="noopener" to links using target="_blank".' : undefined));
+    findings.uiux.push(finding(parsed.uiux.brokenImages ? 'critical' : 'info', 'Brand/logo identity requires visual review', 'HTML can reveal logo-related filenames and image failures, but cannot reliably tell whether a valid image is the correct logo for the claimed brand.', 'Compare every logo, favicon and brand icon against the official brand assets and check desktop/mobile rendering.'));
+    const isHttps = finalUrl.startsWith('https://');
+    const mixedContent = isHttps ? [...tags(html,'img').map(t=>attr(t,'src')), ...tags(html,'script').map(t=>attr(t,'src')), ...tags(html,'iframe').map(t=>attr(t,'src')), ...tags(html,'link').map(t=>attr(t,'href'))].filter(x=>/^http:\/\//i.test(x)) : [];
+    const insecureForms = isHttps ? tags(html,'form').filter(t=>/^http:\/\//i.test(attr(t,'action'))) : [];
+    const setCookie = response.headers.get('set-cookie') || '';
+    const secretPatterns = [
+      { name: 'Private key material', regex: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/ },
+      { name: 'AWS access key pattern', regex: /\bAKIA[0-9A-Z]{16}\b/ },
+      { name: 'GitHub token pattern', regex: /\bgh[pousr]_[A-Za-z0-9_]{30,}\b/ },
+      { name: 'Slack token pattern', regex: /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/ }
+    ];
+    const exposedSecret = secretPatterns.find(x => x.regex.test(html));
+    const securityChecks = [
+      {name:'HTTPS transport',status:isHttps?'pass':'fail',detail:isHttps?'The analyzed page uses HTTPS.':'The final page URL is not HTTPS.',severity:isHttps?'good':'critical'},
+      {name:'Mixed-content references',status:mixedContent.length?'fail':'pass',detail:`${mixedContent.length} HTTP resource reference(s) were found in the HTML of this ${isHttps?'HTTPS':'HTTP'} page.`,severity:mixedContent.length?'critical':'good'},
+      {name:'Insecure form actions',status:insecureForms.length?'fail':'pass',detail:`${insecureForms.length} form(s) submit to an explicit HTTP URL.`,severity:insecureForms.length?'critical':'good'},
+      {name:'Potential exposed secret',status:exposedSecret?'fail':'not-detected',detail:exposedSecret?`A ${exposedSecret.name} pattern was found in the downloaded HTML. Treat it as exposed and rotate it if genuine.`:'No high-confidence private-key or common token pattern was detected in the HTML. This is not a complete secret scan.',severity:exposedSecret?'critical':'good'},
+      {name:'Cookie security attributes',status:setCookie?(/;\\s*secure/i.test(setCookie)&&/;\\s*httponly/i.test(setCookie)?'pass':'review'):'not-observed',detail:setCookie?`Set-Cookie was present; Secure: ${/;\\s*secure/i.test(setCookie)?'yes':'not detected'}, HttpOnly: ${/;\\s*httponly/i.test(setCookie)?'yes':'not detected'}, SameSite: ${/;\\s*samesite=/i.test(setCookie)?'detected':'not detected'}.`:'No Set-Cookie header was observed on this response; session cookies may be set on other routes.',severity:setCookie&&(!/;\\s*secure/i.test(setCookie)||!/;\\s*httponly/i.test(setCookie))?'warning':'good'}
+    ];
+    for (const check of securityChecks) findings.security.push(finding(check.severity, check.name, check.detail, check.status==='fail' || check.status==='review' ? 'Review this control in the deployed application and verify it on authenticated routes as well.' : undefined));
     const scores=scoreAll(findings);
     const totalMs=Date.now()-start;
     return res.status(200).json({
@@ -255,7 +310,7 @@ export default async function handler(req, res) {
       performance:{pageSizeBytes:body.length,pageSizeLabel:body.length>=1024*1024?(body.length/1024/1024).toFixed(2)+' MB':(body.length/1024).toFixed(1)+' KB',requests:parsed.resources.length,imageCount:parsed.images,imagesWithoutDimensions:parsed.imagesWithoutDimensions,scripts:parsed.scripts,stylesheets:parsed.stylesheets},
       accessibility:parsed.accessibility,
       uiux:parsed.uiux,
-      security:{headers},
+      security:{checks:securityChecks,headers:[]},
       scores,findings
     });
   } catch (error) {
