@@ -6,7 +6,7 @@ import './styles.css';
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.warn("[FreeInfo] Service worker registration failed:", error);
+      console.warn("[FreeAssess] Service worker registration failed:", error);
     });
   });
 }
