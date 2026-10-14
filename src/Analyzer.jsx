@@ -58,7 +58,8 @@ function Analyzer() {
     ...(report.findings?.seo || []),
     ...(report.findings?.performance || []),
     ...(report.findings?.accessibility || []),
-    ...(report.findings?.security || [])
+    ...(report.findings?.security || []),
+    ...(report.findings?.uiux || [])
   ] : [], [report]);
   const priorityRank = (item) => {
     const title = String(item?.title || '').toLowerCase();
@@ -76,7 +77,7 @@ function Analyzer() {
     setReport(null);
     setCopied(false);
     let clean = url.trim();
-    if (!clean) { setError('Enter a website URL to get started.'); return; }
+    if (!clean) { setError(htmlFile ? 'Enter the original public page URL above, then upload its saved HTML file.' : 'Enter a website URL to get started.'); return; }
     if (!/^https?:\/\//i.test(clean)) clean = 'https://' + clean;
     try {
       const parsed = new URL(clean);
@@ -113,7 +114,7 @@ function Analyzer() {
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = (niceUrl(report.url) || 'website') + '-freeinfo-report.json';
+    link.download = (niceUrl(report.url) || 'website') + '-freeassess-report.json';
     link.click();
     URL.revokeObjectURL(link.href);
   }
@@ -122,12 +123,13 @@ function Analyzer() {
     { id: 'seo', title: 'SEO', icon: 'search', count: report.findings.seo.length },
     { id: 'performance', title: 'Performance', icon: 'gauge', count: report.findings.performance.length },
     { id: 'accessibility', title: 'Accessibility', icon: 'accessibility', count: report.findings.accessibility.length },
-    { id: 'security', title: 'Security', icon: 'shield', count: report.findings.security.length }
+    { id: 'security', title: 'Security', icon: 'shield', count: report.findings.security.length },
+    { id: 'uiux', title: 'UI/UX', icon: 'accessibility', count: report.findings.uiux?.length || 0 }
   ] : [];
 
   return <div className="app-shell">
     <header className="topbar">
-      <a className="brand" href="#" aria-label="FreeInfo home"><span className="brand-mark"><Icon name="logo" size={23}/></span><span>Free<span className="brand-accent">Info</span><small>WEBSITE TOOLKIT</small></span></a>
+      <a className="brand" href="#" aria-label="FreeAssess home"><span className="brand-mark"><Icon name="logo" size={23}/></span><span>Free<span className="brand-accent">Info</span><small>WEBSITE TOOLKIT</small></span></a>
       <nav className="topnav"><a href="#features">What we check</a><a href="#how-it-works">How it works</a><span className="nav-pill"><span/>Free forever</span></nav>
       <InstallAppButton />
     </header>
@@ -145,9 +147,15 @@ function Analyzer() {
             <button type="submit" disabled={busy}>{busy ? <><span className="spinner"/> Checking…</> : <>Analyze website <Icon name="arrow" size={18}/></>}</button>
           </form>
           <div className="snapshot-upload">
-            <label htmlFor="snapshot-file">Assess a page that requires login <span>While signed in, save the page as an HTML file and attach it here. FreeInfo assesses the saved markup without receiving your password or session cookies.</span></label>
-            <input id="snapshot-file" type="file" accept=".html,.htm,text/html" disabled={busy} onChange={e => setHtmlFile(e.target.files?.[0] || null)} />
-            {htmlFile && <p className="snapshot-selected">Selected: {htmlFile.name}</p>}
+            <label htmlFor="snapshot-file">Assess a page that requires login <span>While signed in, save the page as an HTML file and attach it here. FreeAssess assesses the saved markup without receiving your password or session cookies.</span></label>
+            <input id="snapshot-file" type="file" accept=".html,.htm,text/html" disabled={busy} onChange={e => {
+              const file = e.target.files?.[0] || null;
+              setError('');
+              if (file && !/\.html?$/i.test(file.name) && file.type !== 'text/html') { setHtmlFile(null); setError('Choose a saved .html or .htm webpage file.'); e.target.value = ''; return; }
+              if (file && file.size > 3 * 1024 * 1024) { setHtmlFile(null); setError('Saved HTML files must be 3 MB or smaller. Save only the current page as HTML and try again.'); e.target.value = ''; return; }
+              setHtmlFile(file);
+            }} />
+            {htmlFile && <p className="snapshot-selected">Selected: {htmlFile.name} · {(htmlFile.size / 1024).toFixed(0)} KB. Enter its original public URL above, then click Analyze website.</p>}
           </div>
           {error && <div className="error-message" role="alert"><Icon name="alert" size={17}/>{error}</div>}
           <div className="trust-row"><span><Icon name="lock" size={14}/> No account needed</span><i/><span><Icon name="check" size={14}/> No paid API</span><i/><span><Icon name="clock" size={14}/> Usually under a minute</span></div>
@@ -171,13 +179,14 @@ function Analyzer() {
         <div className="report-heading"><div><div className="section-kicker">YOUR RESULTS</div><h2>Website report<span className="title-period">.</span></h2><p>Analysis for <a href={report.url} target="_blank" rel="noreferrer">{niceUrl(report.url)} <Icon name="external" size={13}/></a> · {new Date(report.analyzedAt).toLocaleString()}</p></div><div className="report-actions"><button className="ghost-button" onClick={copyReport}><Icon name="copy" size={16}/>{copied ? 'Copied!' : 'Copy JSON'}</button><button className="solid-small" onClick={downloadReport}><Icon name="download" size={16}/> Download report</button></div></div>
         <div className="overall-card"><div className="overall-score"><div className={'big-ring ' + grade(report.scores.overall)} style={{'--score': report.scores.overall}}><div><strong>{report.scores.overall}</strong><small>OUT OF 100</small></div></div></div><div className="overall-copy"><div className="score-overline"><span className="status-dot"/> YOUR WEBSITE HEALTH</div><h3>{scoreLabel(report.scores.overall)}</h3><p>{fixes.length ? `We found ${fixes.length} item${fixes.length === 1 ? '' : 's'} worth fixing. Start with the highest-impact recommendations below.` : 'No major issues were detected by these automated checks. A manual review can still uncover more.'}</p><div className="overall-stats"><span><b>{allFindings.filter(x=>x.level==='good').length}</b> checks passed</span><span><b>{fixes.length}</b> recommendations</span><span><b>{report.performance?.requests ?? '—'}</b> page resources</span></div></div></div>
         <div className="score-grid">{sections.map(s => <ScoreCard key={s.id} title={s.title} icon={s.icon} score={report.scores[s.id]} detail={s.count + (s.count === 1 ? ' finding' : ' findings')}/>)}</div>
-        <div className="report-tabs">{[{id:'overview',label:'Overview'},{id:'seo',label:'SEO'},{id:'performance',label:'Performance'},{id:'accessibility',label:'Accessibility'},{id:'security',label:'Security'}].map(t => <button key={t.id} className={tab===t.id?'active':''} onClick={()=>setTab(t.id)}>{t.label}{t.id!=='overview' && <span>{report.findings[t.id].length}</span>}</button>)}</div>
-        {tab==='overview' ? <div className="overview-grid"><div className="panel-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="alert" size={17}/></span><div><h3>Priority actions</h3><p>Highest-impact detected issues first · review before release</p></div></div>{fixes.length ? fixes.slice(0,8).map((f,i)=><Finding key={i} item={f}/>) : <div className="empty-state"><Icon name="check" size={22}/><strong>Nothing urgent found</strong><p>Great start. Review the category tabs for more details.</p></div>}</div><div className="panel-card details-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="globe" size={17}/></span><div><h3>Page snapshot</h3><p>What FreeInfo could read</p></div></div><dl><dt>Page title</dt><dd>{report.seo.title || 'Not found'}</dd><dt>Meta description</dt><dd>{report.seo.description || 'Not found'}</dd><dt>HTTP status</dt><dd><span className="status-value">{report.page.status} {report.page.statusText}</span></dd><dt>Page size</dt><dd>{report.performance.pageSizeLabel}</dd><dt>Canonical URL</dt><dd className="break-word">{report.seo.canonical || 'Not specified'}</dd><dt>Sitemap</dt><dd>{report.seo.sitemap ? 'Detected' : 'Not detected'}</dd></dl><div className="note-box"><Icon name="lock" size={15}/><p>{report.page.statusText === 'Imported HTML snapshot' ? 'This report uses the HTML file you supplied. Original HTTP headers, scripts loaded later, and private API responses are not included.' : 'Only publicly accessible page content and response headers were checked. No website changes were made.'}</p></div></div></div> :
+        <div className="report-tabs">{[{id:'overview',label:'Overview'},{id:'seo',label:'SEO'},{id:'performance',label:'Performance'},{id:'accessibility',label:'Accessibility'},{id:'security',label:'Security'},{id:'uiux',label:'UI/UX'}].map(t => <button key={t.id} className={tab===t.id?'active':''} onClick={()=>setTab(t.id)}>{t.label}{t.id!=='overview' && <span>{report.findings[t.id]?.length || 0}</span>}</button>)}</div>
+        {tab==='overview' ? <div className="overview-grid"><div className="panel-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="alert" size={17}/></span><div><h3>Priority actions</h3><p>Highest-impact detected issues first · review before release</p></div></div>{fixes.length ? fixes.slice(0,8).map((f,i)=><Finding key={i} item={f}/>) : <div className="empty-state"><Icon name="check" size={22}/><strong>Nothing urgent found</strong><p>Great start. Review the category tabs for more details.</p></div>}</div><div className="panel-card details-card"><div className="panel-title"><span className="panel-title-icon"><Icon name="globe" size={17}/></span><div><h3>Page snapshot</h3><p>What FreeAssess could read</p></div></div><dl><dt>Page title</dt><dd>{report.seo.title || 'Not found'}</dd><dt>Meta description</dt><dd>{report.seo.description || 'Not found'}</dd><dt>HTTP status</dt><dd><span className="status-value">{report.page.status} {report.page.statusText}</span></dd><dt>Page size</dt><dd>{report.performance.pageSizeLabel}</dd><dt>Canonical URL</dt><dd className="break-word">{report.seo.canonical || 'Not specified'}</dd><dt>Sitemap</dt><dd>{report.seo.sitemap ? 'Detected' : 'Not detected'}</dd></dl><div className="note-box"><Icon name="lock" size={15}/><p>{report.page.statusText === 'Imported HTML snapshot' ? 'This report uses the HTML file you supplied. Original HTTP headers, scripts loaded later, and private API responses are not included.' : 'Only publicly accessible page content and response headers were checked. No website changes were made.'}</p></div></div></div> :
           <div className="panel-card category-panel"><div className="panel-title"><span className="panel-title-icon"><Icon name={sections.find(s=>s.id===tab)?.icon || 'scan'} size={17}/></span><div><h3>{sections.find(s=>s.id===tab)?.title} checks</h3><p>Signals collected from the public page</p></div></div>{(report.findings[tab]||[]).map((f,i)=><Finding key={i} item={f}/>)}
           {tab==='seo' && <div className="data-grid"><div><span>H1 headings</span><b>{report.seo.h1Count}</b></div><div><span>H2 headings</span><b>{report.seo.h2Count}</b></div><div><span>Open Graph</span><b>{report.seo.openGraph ? 'Detected' : 'Missing'}</b></div><div><span>Robots directive</span><b>{report.seo.robots || 'Default'}</b></div></div>}
           {tab==='performance' && <div className="data-grid"><div><span>HTML transfer size</span><b>{report.performance.pageSizeLabel}</b></div><div><span>Detected resources</span><b>{report.performance.requests}</b></div><div><span>Images</span><b>{report.performance.imageCount}</b></div><div><span>Images without dimensions</span><b>{report.performance.imagesWithoutDimensions}</b></div></div>}
           {tab==='accessibility' && <div className="note-box"><Icon name="alert" size={15}/><p>Automated checks cannot replace assistive-technology testing. Colour contrast and keyboard behaviour should be reviewed in a real browser.</p></div>}
           {tab==='security' && <div className="data-grid">{report.security.headers.map(h=><div key={h.name}><span>{h.name}</span><b className={h.present?'good-text':'warn-text'}>{report.page.statusText === 'Imported HTML snapshot' ? 'Not in snapshot' : h.present ? 'Present' : 'Missing'}</b></div>)}</div>}
+          {tab==='uiux' && <><div className="data-grid"><div><span>Buttons detected</span><b>{report.uiux?.buttons ?? '—'}</b></div><div><span>Links detected</span><b>{report.uiux?.links ?? '—'}</b></div><div><span>Links without destination</span><b className={report.uiux?.linksWithoutHref ? 'warn-text' : 'good-text'}>{report.uiux?.linksWithoutHref ?? '—'}</b></div><div><span>Images / logo clues</span><b>{report.uiux?.images ?? '—'} / {report.uiux?.logoCandidates ?? '—'}</b></div><div><span>Mobile viewport</span><b className={report.uiux?.hasViewport ? 'good-text' : 'warn-text'}>{report.uiux?.hasViewport ? 'Detected' : 'Missing'}</b></div><div><span>Navigation landmark</span><b>{report.uiux?.hasNavigation ? 'Detected' : 'Not detected'}</b></div><div><span>Main content landmark</span><b>{report.uiux?.hasMainLandmark ? 'Detected' : 'Not detected'}</b></div><div><span>Favicon reference</span><b>{report.uiux?.hasFavicon ? 'Detected' : 'Missing'}</b></div></div><div className="note-box"><Icon name="alert" size={15}/><p>UI/UX markup signals are a first-pass review. This HTML scan cannot prove that every button works, every route loads, the visual design is polished, or responsive layouts and keyboard flows behave correctly. Those need real-browser interaction testing.</p></div></>}
           </div>}
         <p className="report-disclaimer">Automated results are best-effort signals, not a certification or a substitute for a full audit. Third-party resources, JavaScript-rendered content and browser-only behaviour may not be fully visible.</p>
       </section>}
@@ -192,7 +201,7 @@ function Analyzer() {
         </div>
       </section>}
 
-      {false && <section id="how-it-works" className="how-section"><div className="section-kicker">SIMPLE BY DESIGN</div><h2>From URL to action plan.</h2><div className="steps"><div><span>01</span><h3>Enter a public URL</h3><p>Start with a page you want to understand.</p></div><div><span>02</span><h3>Run the checks</h3><p>FreeInfo inspects page markup and response headers.</p></div><div><span>03</span><h3>Make improvements</h3><p>Use clear findings and exportable results to plan your next steps.</p></div></div></section>}
+      {false && <section id="how-it-works" className="how-section"><div className="section-kicker">SIMPLE BY DESIGN</div><h2>From URL to action plan.</h2><div className="steps"><div><span>01</span><h3>Enter a public URL</h3><p>Start with a page you want to understand.</p></div><div><span>02</span><h3>Run the checks</h3><p>FreeAssess inspects page markup and response headers.</p></div><div><span>03</span><h3>Make improvements</h3><p>Use clear findings and exportable results to plan your next steps.</p></div></div></section>}
       {false && <section className="closing-cta"><div><div className="section-kicker">YOUR NEXT IMPROVEMENT STARTS HERE</div><h2>A better website begins<br/>with <span>better information.</span></h2></div><button onClick={()=>{document.querySelector('.url-form input')?.focus();window.scrollTo({top:0,behavior:'smooth'});}}>Analyze a website <Icon name="arrow" size={18}/></button></section>
       }
     </main>
