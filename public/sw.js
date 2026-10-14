@@ -1,4 +1,4 @@
-const CACHE_NAME = "freeinfo-shell-v1";
+const CACHE_NAME = "freeassess-shell-v2";
 const APP_SHELL = ["/", "/favicon.svg", "/site.webmanifest"];
 
 self.addEventListener("install", (event) => {
