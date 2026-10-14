@@ -14,7 +14,7 @@ const features = [
 function HomePage() {
  return <div className="app-shell home-page">
   <header className="topbar">
-   <a className="brand" href="/" aria-label="FreeAssess homepage"><Mark/><span>Free<span className="brand-accent">Info</span><small>WEBSITE ASSESSER</small></span></a>
+   <a className="brand" href="/" aria-label="FreeAssess homepage"><Mark/><span>Free<span className="brand-accent">Assess</span><small>WEBSITE ASSESSER</small></span></a>
    <nav className="topnav"><a href="#capabilities">Capabilities</a><a href="#how-it-works">How it works</a><a href="#faq">FAQ</a><span className="nav-pill"><span/>Free forever</span></nav>
    <InstallAppButton />
   </header>
