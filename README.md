@@ -1,3 +1,16 @@
+# FreeInfo — CleanMyFile
+
+FreeInfo includes CleanMyFile, a browser-based file inspector. It displays basic file properties, image dimensions, a file signature, and selected JPEG EXIF fields, and can re-encode browser-decodable images to create a copy without carried-over metadata. Files are processed locally in the browser.
+
+## CleanMyFile
+- Route: `/cleanmyfile`
+- Inspects file name, size, MIME type, extension, picker-provided modified time, initial file signature and image dimensions where available.
+- Reads a subset of common JPEG EXIF tags such as camera make/model, software, author and date fields.
+- Re-encodes images supported by the browser into JPEG or PNG to remove embedded metadata from the new image copy.
+- Does not currently strip metadata from PDFs or Office documents, fully parse every file structure, or guarantee detection of every metadata field.
+
+## Existing FreeAssess functionality
+
 # FreeAssess — Free Website Assessor
 
 FreeAssess is a free Emerald-and-Silver website assessor that turns accessible website signals into a practical list of improvements.

@@ -1,4 +1,5 @@
 import React from 'react';
+import CleanMyFile from './CleanMyFile.jsx';
 import Analyzer from './Analyzer.jsx';
 import InstallAppButton from './components/InstallAppButton.jsx';
 import AppFooter from './components/AppFooter.jsx';
@@ -15,7 +16,7 @@ function HomePage() {
  return <div className="app-shell home-page">
   <header className="topbar">
    <a className="brand" href="/" aria-label="FreeAssess homepage"><Mark/><span>Free<span className="brand-accent">Assess</span><small>WEBSITE ASSESSER</small></span></a>
-   <nav className="topnav"><a href="#capabilities">Capabilities</a><a href="#how-it-works">How it works</a><a href="#faq">FAQ</a><span className="nav-pill"><span/>Free forever</span></nav>
+   <nav className="topnav"><a href="/cleanmyfile">CleanMyFile</a><a href="#capabilities">Capabilities</a><a href="#how-it-works">How it works</a><a href="#faq">FAQ</a><span className="nav-pill"><span/>Free forever</span></nav>
    <InstallAppButton />
   </header>
   <main>
@@ -52,5 +53,5 @@ function HomePage() {
 }
 export default function App() {
  const path = window.location.pathname.replace(/\/+$/, '') || '/';
- return path === '/assess' ? <Analyzer/> : <HomePage/>;
+ return path === '/cleanmyfile' ? <CleanMyFile/> : path === '/assess' ? <Analyzer/> : <HomePage/>;
 }
