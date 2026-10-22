@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, CheckCircle2, Download, FileSearch, Image as ImageIcon, LockKeyhole, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
 
 const fmtSize = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(2) + ' MB';
@@ -24,7 +24,6 @@ function readExif(buffer) {
 }
 export default function CleanMyFile(){
  const [file,setFile]=useState(null),[details,setDetails]=useState(null),[exif,setExif]=useState([]),[preview,setPreview]=useState(''),[cleanUrl,setCleanUrl]=useState(''),[cleanName,setCleanName]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
- useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);if(cleanUrl)URL.revokeObjectURL(cleanUrl)},[preview,cleanUrl]);
  async function inspect(f){
   if(!f)return;setFile(f);setError('');setBusy(true);if(preview)URL.revokeObjectURL(preview);if(cleanUrl)URL.revokeObjectURL(cleanUrl);setCleanUrl('');setCleanName('');setExif([]);
   const url=URL.createObjectURL(f);setPreview(url);
