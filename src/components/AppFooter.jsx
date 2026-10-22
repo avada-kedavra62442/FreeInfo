@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function AppFooter() {
   return <footer className="ft-universal-footer">
     <div className="ft-footer-main">
